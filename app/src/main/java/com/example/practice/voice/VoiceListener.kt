@@ -11,6 +11,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.util.Log
+import com.example.practice.Config
 
 /**
  * 안드로이드 기본 음성 인식으로 한국어 한 문장을 들어요 (PRD 7.4 COMMAND 모드).
@@ -60,6 +61,7 @@ class VoiceListener(private val context: Context) {
             override fun onResults(results: Bundle?) {
                 val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
                 Log.i(TAG, "들은 말: $text")
+                lastError = null
                 deliver(text)
             }
 
@@ -69,7 +71,8 @@ class VoiceListener(private val context: Context) {
             }
 
             override fun onError(error: Int) {
-                Log.w(TAG, "음성 인식 오류 코드 $error (7 = 말을 못 알아들음, 6 = 말이 없음, 9 = 권한 없음)")
+                Log.w(TAG, "음성 인식 오류 코드 $error (7 = 말을 못 알아들음, 6 = 말이 없음, 9 = 권한 없음, 13 = 언어를 쓸 수 없음)")
+                lastError = error
                 deliver(null)
             }
 
@@ -83,7 +86,7 @@ class VoiceListener(private val context: Context) {
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Config.SPEECH_LANGUAGE)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
             putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
@@ -91,6 +94,70 @@ class VoiceListener(private val context: Context) {
         isListening = true
         r.startListening(intent)
         Log.i(TAG, "듣기 시작")
+    }
+
+    /** 마지막 듣기의 오류 코드(없으면 null). */
+    var lastError: Int? = null
+        private set
+
+    // ---------- MONITOR 모드 (M3) ----------
+    private var monitoring = false
+    private var consecutiveErrors = 0
+    private var shouldListen: () -> Boolean = { true }
+    private var onHeard: (String) -> Unit = {}
+
+    /**
+     * 안내 중에 계속 들어요(PRD 7.4 MONITOR). 한 문장이 끝나면 잠깐 쉬었다가 다시 들어요.
+     * shouldListen()이 false인 동안(예: 유튜브가 마이크를 쓰는 단계)은 듣지 않고 기다려요.
+     * 들은 말은 onHeard로 넘기고, 정정·정지 판별은 Phrases로 해요.
+     */
+    fun startMonitor(shouldListen: () -> Boolean, onHeard: (String) -> Unit) {
+        this.shouldListen = shouldListen
+        this.onHeard = onHeard
+        if (monitoring) return
+        monitoring = true
+        consecutiveErrors = 0
+        Log.i(TAG, "안내 중 듣기 시작(MONITOR)")
+        main.post(monitorTick)
+    }
+
+    fun stopMonitor() {
+        if (!monitoring) return
+        monitoring = false
+        main.removeCallbacks(monitorTick)
+        cancel()
+        Log.i(TAG, "안내 중 듣기 멈춤")
+    }
+
+    private val monitorTick: Runnable = object : Runnable {
+        override fun run() {
+            if (!monitoring) return
+            if (isListening) return // 듣는 중이면 결과가 오면 다시 불려요
+            if (!hasMicPermission()) {
+                Log.w(TAG, "마이크 권한이 없어서 안내 중 듣기를 멈춰요")
+                monitoring = false
+                return
+            }
+            if (!shouldListen()) {
+                main.postDelayed(this, Config.MONITOR_PAUSED_CHECK_MS)
+                return
+            }
+            listenOnce { said ->
+                if (!said.isNullOrBlank()) onHeard(said)
+                if (!monitoring) return@listenOnce
+                val err = lastError
+                if (err != null && err in PERMANENT_ERRORS) {
+                    // 이 기기에서 계속 실패할 오류예요. 계속 다시 켜면 마이크 표시가 깜빡이며 시스템이 버거워해요.
+                    Log.w(TAG, "음성 인식을 쓸 수 없어서(오류 $err) 안내 중 듣기를 멈춰요. 정정은 접근성 버튼 두 번으로 해 주세요.")
+                    monitoring = false
+                    return@listenOnce
+                }
+                consecutiveErrors = if (err == null || err == SpeechRecognizer.ERROR_SPEECH_TIMEOUT || err == SpeechRecognizer.ERROR_NO_MATCH) 0 else consecutiveErrors + 1
+                // 오류가 이어지면 점점 길게 쉬었다가 다시 들어요(최대 15초).
+                val delay = (Config.MONITOR_RESTART_MS shl consecutiveErrors.coerceAtMost(5)).coerceAtMost(15_000L)
+                main.postDelayed(this, delay)
+            }
+        }
     }
 
     fun cancel() {
@@ -106,5 +173,13 @@ class VoiceListener(private val context: Context) {
 
     private companion object {
         const val TAG = "COCO"
+
+        /** 다시 해도 계속 실패하는 오류: 권한 없음, 언어 미지원, 언어 사용 불가, 지원 확인 불가. */
+        val PERMANENT_ERRORS = setOf(
+            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS, // 9
+            12, // ERROR_LANGUAGE_NOT_SUPPORTED
+            13, // ERROR_LANGUAGE_UNAVAILABLE
+            14, // ERROR_CANNOT_CHECK_SUPPORT
+        )
     }
 }

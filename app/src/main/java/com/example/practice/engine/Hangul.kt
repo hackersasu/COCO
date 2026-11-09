@@ -1,7 +1,8 @@
 package com.example.practice.engine
 
 /**
- * 한글을 두벌식 자판에서 누를 키 순서로 바꿔요. 예: "리센느" → ㄹ ㅣ ㅅ ㅔ ㄴ ㄴ ㅡ
+ * 글자를 자판에서 누를 키 순서로 바꿔요.
+ * 한글은 두벌식 자모로(예: "리센느" → ㄹ ㅣ ㅅ ㅔ ㄴ ㄴ ㅡ), 영어는 소문자 키로(예: "RESCENE" → r e s c e n e).
  * 안드로이드에 의존하지 않는 순수 Kotlin이라 단위 테스트(HangulTest)로 확인해요.
  *
  * 쌍자음(ㄲ ㄸ ㅃ ㅆ ㅉ)과 ㅒ ㅖ는 Shift가 필요해서 키 이름 그대로 남겨 둬요.
@@ -50,7 +51,9 @@ object Hangul {
                     addJamo(out, JUNG[(code % SYLLABLE_COUNT_PER_CHO) / 28])
                     JONG[code % 28].takeIf { it.isNotEmpty() }?.let { addJamo(out, it) }
                 }
-                else -> addJamo(out, ch.toString()) // 낱자(ㄴ, ㅘ …)나 영어·숫자
+                // 영어는 소문자 키로 쳐요(유튜브 검색은 대소문자를 가리지 않아요).
+                ch in 'A'..'Z' || ch in 'a'..'z' -> out += ch.lowercaseChar().toString()
+                else -> addJamo(out, ch.toString()) // 낱자(ㄴ, ㅘ …)나 숫자 등
             }
         }
         return out

@@ -1,0 +1,42 @@
+{
+  "capability": "GAL_RECENT",
+  "package": "com.google.android.apps.photos",
+  "_note": "손주 사진 보기. 갤러리(에뮬레이터는 Google 포토, 로그인 안 함)를 열고 손주 사진(맨 아래 'Tue, Oct 20')을 누르게 해요. 손주 사진은 scripts/load_demo_photos.sh가 날짜를 2026-10-20 15:00으로 넣어 둔 사진이에요. 사진 칸 설명은 'Photo taken on Oct 20, 2026 3:00 PM' 형식이에요(11/9 확인). 사진이 8장 이하면 첫 화면에 손주 사진이 바로 보여서 open_folder·find_photo는 저절로 건너뛰어요. 사진이 더 많으면 첫 화면 8번째 칸에 'N >'(More photos)가 떠서 폴더를 열고 위로 밀게 안내해요.",
+  "steps": [
+    {
+      "id": "open_app",
+      "screen": "launcher",
+      "target": {"text": ["Photos", "갤러리", "Gallery"]},
+      "gesture": "tap",
+      "difficulty": 1,
+      "done_when": {"package_foreground": "com.google.android.apps.photos"}
+    },
+    {
+      "id": "open_folder",
+      "_desc": "첫 화면은 최근 7장만 보여 주고 8번째 칸에 '29 >'가 떠요. 그 칸을 누르면 Camera 폴더 전체가 열려요. 폴더 화면에만 있는 '뒤로'(Navigate up) 버튼이 보이면 완료.",
+      "target": {"viewId": "overflow_count"},
+      "fallback_target": {"desc": ["More photos", "사진 더보기"]},
+      "gesture": "tap",
+      "difficulty": 1,
+      "done_when": {"node_appears": {"desc": ["Navigate up", "위로 이동"]}}
+    },
+    {
+      "id": "find_photo",
+      "_desc": "사진 목록을 위로 밀어 올리게 안내해요. 손주 사진이 화면에 보이면 바로 다음 단계로 넘어가요. 폴더 화면에서만 보여요(첫 화면에서 스크롤 안내가 뜨지 않게).",
+      "screen_has": {"desc": ["Navigate up", "위로 이동"]},
+      "target": {"viewId": "recycler_view"},
+      "gesture": "scroll_up",
+      "difficulty": 2,
+      "done_when": {"node_appears": {"within": {"viewId": "recycler_view"}, "descContains": ["Oct 20", "10월 20일"]}}
+    },
+    {
+      "id": "tap_photo",
+      "_desc": "Google 포토는 사진을 눌러도 탭·화면 전환 신호를 안 보내요(같은 화면 안에서 열려요). 그래서 사진 보기 화면에만 있는 즐겨찾기 버튼이 보이면 완료. window_changed는 넣지 않아요: 업데이트 안내창이 닫힐 때도 화면 전환 신호가 와서 사진을 안 눌렀는데 완료돼 버려요(11/9 확인).",
+      "target": {"within": {"viewId": "recycler_view"}, "descContains": ["Oct 20", "10월 20일"]},
+      "gesture": "tap",
+      "difficulty": 1,
+      "done_when": {"clicked_target": true, "node_appears": {"viewId": "photos_pager_menu_favorites"}},
+      "final": true
+    }
+  ]
+}

@@ -39,9 +39,9 @@
     },
     {
       "id": "tap_video",
-      "_desc": "특정 영상을 고정하려면 descContains에 영상 제목 일부를 넣으면 됨. 지금은 첫 번째 영상.",
+      "_desc": "영상 항목 설명은 '제목 - 3 minutes, 44 seconds - Go to channel 채널명 - …' 꼴(11/9 YouTube). 재생목록(Mix)에는 ' - Go to channel '이 없어서 영상만 걸림. 특정 영상을 고정하려면 제목 일부를 넣으면 됨.",
       "screen_has": {"viewId": "com.google.android.youtube:id/search_query"},
-      "target": {"descContains": ["play video", "동영상 재생"]},
+      "target": {"within": {"viewId": "com.google.android.youtube:id/results"}, "descContains": [" - Go to channel ", "play video", "동영상 재생"]},
       "gesture": "tap",
       "difficulty": 1,
       "done_when": {"clicked_target": true, "node_appears": {"viewId": "com.google.android.youtube:id/watch_player"}},

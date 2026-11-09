@@ -43,6 +43,19 @@ class HangulTest {
     }
 
     @Test
+    fun `영어는 소문자 키로 나눈다`() {
+        assertEquals(listOf("r", "e", "s", "c", "e", "n", "e"), Hangul.keystrokes("RESCENE"))
+        assertEquals(listOf("n", "e", "w", Hangul.SPACE, "j"), Hangul.keystrokes("New J"))
+    }
+
+    @Test
+    fun `영어도 친 만큼 보고 다음 키를 고른다`() {
+        assertEquals("s", Hangul.nextKey("Re", "rescene"))
+        assertEquals(Hangul.ENTER, Hangul.nextKey("Rescene", "RESCENE"))
+        assertEquals(Hangul.BACKSPACE, Hangul.nextKey("rex", "rescene"))
+    }
+
+    @Test
     fun `잘못 치면 지우기 키를 가리킨다`() {
         assertEquals(Hangul.BACKSPACE, Hangul.nextKey("리셈", "리센느"))
         assertEquals(Hangul.BACKSPACE, Hangul.nextKey("ㅁ", "리센느"))

@@ -1,0 +1,76 @@
+{
+  "capability": "CALL_VIDEO",
+  "package": "com.google.android.dialer",
+  "_note": "AI는 목표(CALL_VIDEO)와 슬롯(contact, 예: James)만 정하고, 아래 순서는 하드코딩. 선택자는 에뮬레이터 Google 전화 앱(영어) uiautomator dump로 확인(11/9). 갤럭시(삼성 전화)는 패키지·문구가 달라서 다시 dump해야 함.",
+  "steps": [
+    {
+      "id": "open_app",
+      "screen": "launcher",
+      "target": {
+        "text": [
+          "Phone",
+          "전화"
+        ]
+      },
+      "gesture": "tap",
+      "difficulty": 1,
+      "done_when": {
+        "package_foreground": "com.google.android.dialer"
+      }
+    },
+    {
+      "id": "view_contacts",
+      "target": {
+        "text": [
+          "View contacts",
+          "연락처 보기",
+          "연락처"
+        ]
+      },
+      "gesture": "tap",
+      "difficulty": 2,
+      "done_when": {
+        "clicked_target": true,
+        "node_appears": {
+          "viewId": "open_search_bar"
+        }
+      }
+    },
+    {
+      "id": "tap_contact",
+      "_desc": "연락처 목록에서 손주 이름을 눌러요. 이름은 AI가 호칭(손주 → James)으로 채운 contact 슬롯이에요.",
+      "target": {
+        "textContains": [
+          "{contact}"
+        ]
+      },
+      "gesture": "tap",
+      "difficulty": 2,
+      "done_when": {
+        "node_appears": {
+          "viewId": "verb_video"
+        }
+      }
+    },
+    {
+      "id": "tap_video_call",
+      "_desc": "영상통화 버튼을 가리켜요. 에뮬레이터는 영상통화 앱이 없어 버튼이 회색이라 눌러도 반응·완료 감지가 없고, 실폰에서는 영상통화가 열리면서 완료돼요.",
+      "target": {
+        "within": {
+          "viewId": "verb_video"
+        },
+        "descContains": [
+          "video call",
+          "영상"
+        ]
+      },
+      "gesture": "tap",
+      "difficulty": 3,
+      "done_when": {
+        "clicked_target": true,
+        "window_changed": true
+      },
+      "final": true
+    }
+  ]
+}

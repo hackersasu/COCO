@@ -1,0 +1,68 @@
+{
+  "capability": "CALL_VOICE",
+  "package": "com.google.android.dialer",
+  "_note": "CALL_VIDEO와 같은 길이고 마지막만 일반 전화(Call) 버튼. 에뮬레이터 Google 전화 앱 기준(11/9).",
+  "steps": [
+    {
+      "id": "open_app",
+      "screen": "launcher",
+      "target": {
+        "text": [
+          "Phone",
+          "전화"
+        ]
+      },
+      "gesture": "tap",
+      "difficulty": 1,
+      "done_when": {
+        "package_foreground": "com.google.android.dialer"
+      }
+    },
+    {
+      "id": "view_contacts",
+      "target": {
+        "text": [
+          "View contacts",
+          "연락처 보기",
+          "연락처"
+        ]
+      },
+      "gesture": "tap",
+      "difficulty": 2,
+      "done_when": {
+        "clicked_target": true,
+        "node_appears": {
+          "viewId": "open_search_bar"
+        }
+      }
+    },
+    {
+      "id": "tap_contact",
+      "target": {
+        "textContains": [
+          "{contact}"
+        ]
+      },
+      "gesture": "tap",
+      "difficulty": 2,
+      "done_when": {
+        "node_appears": {
+          "viewId": "verb_call"
+        }
+      }
+    },
+    {
+      "id": "tap_call",
+      "target": {
+        "viewId": "verb_call"
+      },
+      "gesture": "tap",
+      "difficulty": 2,
+      "done_when": {
+        "clicked_target": true,
+        "window_changed": true
+      },
+      "final": true
+    }
+  ]
+}

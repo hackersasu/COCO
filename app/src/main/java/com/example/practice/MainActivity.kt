@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.practice.context.DemoSettings
 
 /**
  * COCO 앱 자체의 설정 화면 (PRD 7.8). 다른 앱 위에는 아무것도 띄우지 않으니 HC-0의 예외예요.
@@ -64,6 +65,8 @@ class MainActivity : ComponentActivity() {
     private val micOn = mutableStateOf(false)
     private val usesGpt = mutableStateOf(false)
     private val lastResult = mutableStateOf<String?>(null)
+    private val demoTime = mutableStateOf("")
+    private val demoSettings by lazy { DemoSettings(this) }
 
     private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         micOn.value = granted
@@ -79,6 +82,11 @@ class MainActivity : ComponentActivity() {
                     micOn = micOn.value,
                     usesGpt = usesGpt.value,
                     lastResult = lastResult.value,
+                    demoTime = demoTime.value,
+                    onDemoTimeChange = {
+                        demoTime.value = it
+                        demoSettings.demoTime = it
+                    },
                     onOpenAccessibility = { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
                     onAskMic = { micPermission.launch(Manifest.permission.RECORD_AUDIO) },
                     onRankTest = ::rankTest,
@@ -93,6 +101,7 @@ class MainActivity : ComponentActivity() {
         // 설정에서 돌아오거나 홈에서 다시 열 때마다 상태를 새로 확인해요.
         serviceOn.value = isCocoServiceEnabled()
         micOn.value = checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        demoTime.value = demoSettings.demoTime.orEmpty()
         val service = CocoAccessibilityService.instance
         usesGpt.value = service?.usesGpt ?: (!Config.DEMO_MODE && BuildConfig.OPENAI_API_KEY.isNotBlank())
         lastResult.value = service?.let { s ->
@@ -146,12 +155,14 @@ private fun SettingsScreen(
     micOn: Boolean,
     usesGpt: Boolean,
     lastResult: String?,
+    demoTime: String,
+    onDemoTimeChange: (String) -> Unit,
     onOpenAccessibility: () -> Unit,
     onAskMic: () -> Unit,
     onRankTest: (String) -> Unit,
     onM1Test: () -> Unit,
 ) {
-    var sentence by remember { mutableStateOf("리센느가 뭐야?") }
+    var sentence by remember { mutableStateOf("What is BTS?") }
     Column(
         Modifier
             .fillMaxSize()
@@ -204,7 +215,24 @@ private fun SettingsScreen(
 
         Card {
             Text("코코 부르기", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = Ink)
-            Body("사람 모양 접근성 버튼을 누르고 말하면, AI가 목표를 정하고 점이 첫 버튼을 가리켜요. 안내 중에 다시 누르면 멈춰요.")
+            Body(
+                "사람 모양 접근성 버튼을 누르고 말하면, AI가 목표를 정하고 점이 첫 버튼을 가리켜요(음성 언어: ${Config.SPEECH_LANGUAGE}).\n" +
+                    "안내 중에 \"No, not that\"(아니 그거 말고) → 다음 후보로, \"COCO stop\"(코코야 그만) → 멈춤.\n" +
+                    "말이 잘 안 되면 접근성 버튼을 빠르게 두 번 = 다음 후보, 한 번 = 멈춤.",
+            )
+        }
+
+        Card {
+            Text("데모 시각", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+            Body("비워 두면 실제 시각을 써요. 예: 23:12로 두면 늦은 밤이라 통화보다 사진을 먼저 골라요.")
+            OutlinedTextField(
+                value = demoTime,
+                onValueChange = onDemoTimeChange,
+                singleLine = true,
+                placeholder = { Text("예: 23:12") },
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
 
         Card {
@@ -230,7 +258,7 @@ private fun SettingsScreen(
                 onClick = onM1Test,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("유튜브 '리센느' 검색 안내 바로 시작", fontSize = 15.sp, color = CocoBlue) }
+            ) { Text("유튜브 'BTS' 검색 안내 바로 시작", fontSize = 15.sp, color = CocoBlue) }
         }
     }
 }

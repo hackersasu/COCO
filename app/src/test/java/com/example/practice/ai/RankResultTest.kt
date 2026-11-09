@@ -47,7 +47,16 @@ class RankResultTest {
     fun `데모 순위표 - 손주 사진과 손주 보고 싶네를 구분한다`() {
         assertEquals("GAL_RECENT", demo.match("손주 사진 보고 싶네", catalog.ids, 5)?.top?.id)
         assertEquals("CALL_VIDEO", demo.match("손주 보고 싶어", catalog.ids, 5)?.top?.id)
-        assertEquals("GAL_RECENT", demo.match("아이고 손주 보고 싶네", catalog.ids, 5)?.top?.id)
+        assertEquals("CALL_VIDEO", demo.match("아이고 손주 보고 싶네", catalog.ids, 5)?.top?.id)
+    }
+
+    @Test
+    fun `보고 싶다는 영상통화, 목소리는 전화가 1등`() {
+        val see = demo.match("I miss my grandkid", catalog.ids, 5)!!
+        assertEquals(listOf("CALL_VIDEO", "CALL_VOICE"), see.ranking.take(2).map { it.id })
+        assertEquals("James (Grandchild)", see.slots["contact"])
+        assertEquals("CALL_VOICE", demo.match("I want to hear my grandkid's voice", catalog.ids, 5)?.top?.id)
+        assertEquals("CALL_VOICE", demo.match("손주 목소리 듣고 싶네", catalog.ids, 5)?.top?.id)
     }
 
     @Test

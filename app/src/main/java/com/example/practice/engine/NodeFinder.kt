@@ -31,6 +31,31 @@ class NodeFinder(private val service: AccessibilityService) {
     fun exists(target: Target): Boolean = find(target) != null
 
     /**
+     * 개발용: 지금 화면에서 글자나 설명에 word가 들어간 노드를 전부 적어요(선택자 찾기용).
+     * 영상이 재생 중이라 uiautomator dump가 안 될 때 써요. 화면 전체를 훑으니 자주 부르지 마세요.
+     */
+    fun debugDump(word: String): List<String> {
+        val root = service.rootInActiveWindow ?: return listOf("(화면 없음)")
+        val out = mutableListOf<String>()
+        val stack = ArrayDeque<AccessibilityNodeInfo>()
+        stack.addFirst(root)
+        val w = word.lowercase()
+        while (stack.isNotEmpty() && out.size < 40) {
+            val n = stack.removeFirst()
+            if (n.isPassword) continue
+            val text = n.text?.toString().orEmpty()
+            val desc = n.contentDescription?.toString().orEmpty()
+            if (w.isEmpty() || text.lowercase().contains(w) || desc.lowercase().contains(w)) {
+                val r = Rect().also { n.getBoundsInScreen(it) }
+                out += "${n.className?.toString()?.substringAfterLast('.')} id=${n.viewIdResourceName?.substringAfterLast('/')} " +
+                    "click=${n.isClickable} vis=${n.isVisibleToUser} $r text='${text.take(60)}' desc='${desc.take(120)}'"
+            }
+            for (i in n.childCount - 1 downTo 0) n.getChild(i)?.let { stack.addFirst(it) }
+        }
+        return out
+    }
+
+    /**
      * 입력 칸 같은 노드에 지금 적힌 글자. 안내 문구(힌트)만 보이면 빈 글자로 봐요.
      * 비밀번호 칸은 읽지 않아요(HC-6). 이 글자는 기기 밖으로 보내지 않아요.
      */
@@ -52,6 +77,11 @@ class NodeFinder(private val service: AccessibilityService) {
     }
 
     private fun findIn(root: AccessibilityNodeInfo, t: Target): AccessibilityNodeInfo? {
+        // 0) "이 목록 안에서" 찾기: 먼저 목록을 빠르게 찾고, 그 안만 차례로 훑어요.
+        t.within?.let { w ->
+            val container = findNode(w) ?: return null
+            return fullScan(container, t.copy(within = null), WITHIN_SCAN_NODES)
+        }
         // 1) 빠른 길: 앱이 자기 안에서 한 번에 찾아서 돌려줘요.
         if (t.viewId != null) {
             val id = if (t.viewId.contains(":id/")) t.viewId else "${root.packageName}:id/${t.viewId}"
@@ -70,11 +100,11 @@ class NodeFinder(private val service: AccessibilityService) {
         return fullScan(root, t)
     }
 
-    private fun fullScan(root: AccessibilityNodeInfo, t: Target): AccessibilityNodeInfo? {
+    private fun fullScan(root: AccessibilityNodeInfo, t: Target, limit: Int = MAX_SCAN_NODES): AccessibilityNodeInfo? {
         val stack = ArrayDeque<AccessibilityNodeInfo>()
         stack.addFirst(root)
         var visited = 0
-        while (stack.isNotEmpty() && visited++ < MAX_SCAN_NODES) {
+        while (stack.isNotEmpty() && visited++ < limit) {
             val node = stack.removeFirst()
             if (usable(node, t)) return node
             for (i in node.childCount - 1 downTo 0) {
@@ -100,6 +130,7 @@ class NodeFinder(private val service: AccessibilityService) {
         if (t.textContains.isNotEmpty() && (text == null || t.textContains.none { text.contains(it) })) return false
         if (t.descContains.isNotEmpty() && (desc == null || t.descContains.none { desc.contains(it) })) return false
         t.className?.let { if (n.className?.toString() != it) return false }
+        if (t.enabledOnly && !n.isEnabled) return false
         return true
     }
 
@@ -117,5 +148,6 @@ class NodeFinder(private val service: AccessibilityService) {
     private companion object {
         const val MAX_PARENT_HOPS = 5
         const val MAX_SCAN_NODES = 1500
+        const val WITHIN_SCAN_NODES = 3000
     }
 }

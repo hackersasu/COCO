@@ -69,7 +69,7 @@ class DemoRankings(private val entries: List<Pair<String, JSONObject>>) {
     companion object {
         private val NOT_WORD = Regex("[\\s\\p{Punct}~…]")
 
-        fun normalize(s: String): String = s.replace(NOT_WORD, "")
+        fun normalize(s: String): String = s.replace(NOT_WORD, "").lowercase()
 
         fun parse(o: JSONObject): DemoRankings {
             val arr = o.optJSONArray("entries")

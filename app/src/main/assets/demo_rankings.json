@@ -1,13 +1,370 @@
 {
   "_note": "데모 모드 고정 순위(PRD 7.5). API 키가 없거나, DEMO_MODE이거나, API 호출이 실패하면 이 표에서 말을 찾아 써요. 말은 띄어쓰기·문장부호를 빼고 비교하고, 들어 있는 것 중 가장 긴 것을 골라요.",
   "entries": [
-    {"utterance": "손주 사진 보고 싶네", "ranking": [{"id": "GAL_RECENT", "p": 0.82}, {"id": "KT_SEND_TEXT", "p": 0.08}, {"id": "CALL_VIDEO", "p": 0.06}], "slots": {"album": "지은"}},
-    {"utterance": "손주 보고 싶네", "ranking": [{"id": "GAL_RECENT", "p": 0.46}, {"id": "CALL_VIDEO", "p": 0.41}, {"id": "KT_SEND_TEXT", "p": 0.08}, {"id": "KT_FACETALK", "p": 0.03}, {"id": "CALL_VOICE", "p": 0.02}], "slots": {"contact": "지은", "album": "지은"}},
-    {"utterance": "손주 보고 싶어", "ranking": [{"id": "CALL_VIDEO", "p": 0.55}, {"id": "KT_FACETALK", "p": 0.25}, {"id": "GAL_RECENT", "p": 0.15}], "slots": {"contact": "지은"}},
-    {"utterance": "애들이 뉴진스 얘기하던데", "ranking": [{"id": "YT_SEARCH", "p": 0.9}, {"id": "OUT_OF_SCOPE", "p": 0.05}], "slots": {"query": "뉴진스 무대"}},
-    {"utterance": "리센느가 뭐야", "ranking": [{"id": "YT_SEARCH", "p": 0.9}, {"id": "OUT_OF_SCOPE", "p": 0.05}], "slots": {"query": "리센느"}},
-    {"utterance": "폰 글씨가 너무 작아", "ranking": [{"id": "SET_FONT", "p": 0.85}, {"id": "CAM_MAGNIFIER", "p": 0.1}]},
-    {"utterance": "약봉투 글씨가 안 보이네", "ranking": [{"id": "CAM_MAGNIFIER", "p": 0.8}, {"id": "SET_FONT", "p": 0.15}]},
-    {"utterance": "통장에 돈 얼마 있어", "ranking": [{"id": "OUT_OF_SCOPE", "p": 0.95}]}
+    {
+      "utterance": "손주 보고 싶네",
+      "ranking": [
+        {
+          "id": "CALL_VIDEO",
+          "p": 0.45
+        },
+        {
+          "id": "CALL_VOICE",
+          "p": 0.3
+        },
+        {
+          "id": "GAL_RECENT",
+          "p": 0.15
+        },
+        {
+          "id": "KT_FACETALK",
+          "p": 0.07
+        },
+        {
+          "id": "KT_SEND_TEXT",
+          "p": 0.03
+        }
+      ],
+      "slots": {
+        "contact": "James (Grandchild)"
+      }
+    },
+    {
+      "utterance": "손주 보고 싶어",
+      "ranking": [
+        {
+          "id": "CALL_VIDEO",
+          "p": 0.45
+        },
+        {
+          "id": "CALL_VOICE",
+          "p": 0.3
+        },
+        {
+          "id": "GAL_RECENT",
+          "p": 0.15
+        },
+        {
+          "id": "KT_FACETALK",
+          "p": 0.07
+        },
+        {
+          "id": "KT_SEND_TEXT",
+          "p": 0.03
+        }
+      ],
+      "slots": {
+        "contact": "James (Grandchild)"
+      }
+    },
+    {
+      "utterance": "손주 목소리 듣고 싶네",
+      "ranking": [
+        {
+          "id": "CALL_VOICE",
+          "p": 0.6
+        },
+        {
+          "id": "CALL_VIDEO",
+          "p": 0.3
+        },
+        {
+          "id": "KT_SEND_TEXT",
+          "p": 0.05
+        }
+      ],
+      "slots": {
+        "contact": "James (Grandchild)"
+      }
+    },
+    {
+      "utterance": "I miss my grandkid",
+      "ranking": [
+        {
+          "id": "CALL_VIDEO",
+          "p": 0.45
+        },
+        {
+          "id": "CALL_VOICE",
+          "p": 0.3
+        },
+        {
+          "id": "GAL_RECENT",
+          "p": 0.15
+        },
+        {
+          "id": "KT_FACETALK",
+          "p": 0.07
+        },
+        {
+          "id": "KT_SEND_TEXT",
+          "p": 0.03
+        }
+      ],
+      "slots": {
+        "contact": "James (Grandchild)"
+      }
+    },
+    {
+      "utterance": "I miss my grandchild",
+      "ranking": [
+        {
+          "id": "CALL_VIDEO",
+          "p": 0.45
+        },
+        {
+          "id": "CALL_VOICE",
+          "p": 0.3
+        },
+        {
+          "id": "GAL_RECENT",
+          "p": 0.15
+        },
+        {
+          "id": "KT_FACETALK",
+          "p": 0.07
+        },
+        {
+          "id": "KT_SEND_TEXT",
+          "p": 0.03
+        }
+      ],
+      "slots": {
+        "contact": "James (Grandchild)"
+      }
+    },
+    {
+      "utterance": "I want to hear my grandkid's voice",
+      "ranking": [
+        {
+          "id": "CALL_VOICE",
+          "p": 0.6
+        },
+        {
+          "id": "CALL_VIDEO",
+          "p": 0.3
+        },
+        {
+          "id": "KT_SEND_TEXT",
+          "p": 0.05
+        }
+      ],
+      "slots": {
+        "contact": "James (Grandchild)"
+      }
+    },
+    {
+      "utterance": "I want to hear my grandchild's voice",
+      "ranking": [
+        {
+          "id": "CALL_VOICE",
+          "p": 0.6
+        },
+        {
+          "id": "CALL_VIDEO",
+          "p": 0.3
+        },
+        {
+          "id": "KT_SEND_TEXT",
+          "p": 0.05
+        }
+      ],
+      "slots": {
+        "contact": "James (Grandchild)"
+      }
+    },
+    {
+      "utterance": "I want to video call my grandchild",
+      "ranking": [
+        {
+          "id": "CALL_VIDEO",
+          "p": 0.85
+        },
+        {
+          "id": "KT_FACETALK",
+          "p": 0.1
+        }
+      ],
+      "slots": {
+        "contact": "James (Grandchild)"
+      }
+    },
+    {
+      "utterance": "Call my grandchild",
+      "ranking": [
+        {
+          "id": "CALL_VOICE",
+          "p": 0.8
+        },
+        {
+          "id": "CALL_VIDEO",
+          "p": 0.15
+        }
+      ],
+      "slots": {
+        "contact": "James (Grandchild)"
+      }
+    },
+    {
+      "utterance": "손주 사진 보고 싶네",
+      "ranking": [
+        {
+          "id": "GAL_RECENT",
+          "p": 0.82
+        },
+        {
+          "id": "KT_SEND_TEXT",
+          "p": 0.08
+        },
+        {
+          "id": "CALL_VIDEO",
+          "p": 0.06
+        }
+      ],
+      "slots": {
+        "album": "James (Grandchild)"
+      }
+    },
+    {
+      "utterance": "애들이 뉴진스 얘기하던데",
+      "ranking": [
+        {
+          "id": "YT_SEARCH",
+          "p": 0.9
+        },
+        {
+          "id": "OUT_OF_SCOPE",
+          "p": 0.05
+        }
+      ],
+      "slots": {
+        "query": "뉴진스 무대"
+      }
+    },
+    {
+      "utterance": "리센느가 뭐야",
+      "ranking": [
+        {
+          "id": "YT_SEARCH",
+          "p": 0.9
+        },
+        {
+          "id": "OUT_OF_SCOPE",
+          "p": 0.05
+        }
+      ],
+      "slots": {
+        "query": "리센느"
+      }
+    },
+    {
+      "utterance": "폰 글씨가 너무 작아",
+      "ranking": [
+        {
+          "id": "SET_FONT",
+          "p": 0.85
+        },
+        {
+          "id": "CAM_MAGNIFIER",
+          "p": 0.1
+        }
+      ]
+    },
+    {
+      "utterance": "약봉투 글씨가 안 보이네",
+      "ranking": [
+        {
+          "id": "CAM_MAGNIFIER",
+          "p": 0.8
+        },
+        {
+          "id": "SET_FONT",
+          "p": 0.15
+        }
+      ]
+    },
+    {
+      "utterance": "통장에 돈 얼마 있어",
+      "ranking": [
+        {
+          "id": "OUT_OF_SCOPE",
+          "p": 0.95
+        }
+      ]
+    },
+    {
+      "utterance": "What is BTS",
+      "ranking": [
+        {
+          "id": "YT_SEARCH",
+          "p": 0.9
+        },
+        {
+          "id": "OUT_OF_SCOPE",
+          "p": 0.05
+        }
+      ],
+      "slots": {
+        "query": "BTS"
+      }
+    },
+    {
+      "utterance": "What is RESCENE",
+      "ranking": [
+        {
+          "id": "YT_SEARCH",
+          "p": 0.9
+        },
+        {
+          "id": "OUT_OF_SCOPE",
+          "p": 0.05
+        }
+      ],
+      "slots": {
+        "query": "RESCENE"
+      }
+    },
+    {
+      "utterance": "I want to see my grandchild's photos",
+      "ranking": [
+        {
+          "id": "GAL_RECENT",
+          "p": 0.82
+        },
+        {
+          "id": "KT_SEND_TEXT",
+          "p": 0.08
+        },
+        {
+          "id": "CALL_VIDEO",
+          "p": 0.06
+        }
+      ],
+      "slots": {
+        "album": "James (Grandchild)"
+      }
+    },
+    {
+      "utterance": "The text on my phone is too small",
+      "ranking": [
+        {
+          "id": "SET_FONT",
+          "p": 0.85
+        },
+        {
+          "id": "CAM_MAGNIFIER",
+          "p": 0.1
+        }
+      ]
+    },
+    {
+      "utterance": "How much money is in my bank account",
+      "ranking": [
+        {
+          "id": "OUT_OF_SCOPE",
+          "p": 0.95
+        }
+      ]
+    }
   ]
 }

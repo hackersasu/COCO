@@ -17,6 +17,10 @@ data class Target(
     val textContains: List<String> = emptyList(),
     val descContains: List<String> = emptyList(),
     val className: String? = null,
+    /** 이 노드 안에서만 찾아요(예: 결과 목록 안의 영상). 화면 전체를 훑지 않아서 빠르고 정확해요. */
+    val within: Target? = null,
+    /** true면 눌 수 있는(회색으로 꺼지지 않은) 버튼만 찾아요. 꺼져 있으면 단계의 fallback_target을 가리켜요. */
+    val enabledOnly: Boolean = false,
 ) {
     val isEmpty: Boolean
         get() = viewId == null && className == null &&
@@ -30,6 +34,7 @@ data class Target(
             text = text.map(::fill),
             textContains = textContains.map(::fill),
             descContains = descContains.map(::fill),
+            within = within?.withSlots(slots),
         )
     }
 
@@ -43,6 +48,8 @@ data class Target(
                 textContains = o.strings("textContains"),
                 descContains = o.strings("descContains"),
                 className = o.cleanString("className"),
+                within = parse(o.optJSONObject("within")),
+                enabledOnly = o.optBoolean("enabled", false),
             )
             return if (t.isEmpty) null else t
         }

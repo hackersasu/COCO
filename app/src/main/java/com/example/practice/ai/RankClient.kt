@@ -32,17 +32,21 @@ class RankClient(
     private val apiKey: String get() = BuildConfig.OPENAI_API_KEY
     val usesGpt: Boolean get() = !Config.DEMO_MODE && apiKey.isNotBlank()
 
-    suspend fun rank(utterance: String, context: JSONObject): RankResult {
+    /** exclude: 이미 "아니"라고 한 후보들. 결과에서 빼요(정정 뒤 다시 순위 매길 때). */
+    suspend fun rank(utterance: String, context: JSONObject, exclude: Collection<String> = emptyList()): RankResult {
         val topK = Config.RANK_TOP_K
-        if (!usesGpt) {
-            return demo.match(utterance, catalog.ids, topK) ?: empty("demo(없음)")
+        val result = if (!usesGpt) {
+            demo.match(utterance, catalog.ids, topK + exclude.size) ?: empty("demo(없음)")
+        } else {
+            try {
+                askGpt(utterance, context)
+            } catch (e: Exception) {
+                Log.w(TAG, "GPT 순위 요청 실패 → 데모 순위표로: ${e.message}")
+                demo.match(utterance, catalog.ids, topK + exclude.size)?.copy(source = "demo(폴백)") ?: empty("실패")
+            }
         }
-        return try {
-            askGpt(utterance, context)
-        } catch (e: Exception) {
-            Log.w(TAG, "GPT 순위 요청 실패 → 데모 순위표로: ${e.message}")
-            demo.match(utterance, catalog.ids, topK)?.copy(source = "demo(폴백)") ?: empty("실패")
-        }
+        if (exclude.isEmpty()) return result
+        return result.copy(ranking = result.ranking.filter { it.id !in exclude }.take(topK))
     }
 
     private suspend fun askGpt(utterance: String, context: JSONObject): RankResult = withContext(Dispatchers.IO) {

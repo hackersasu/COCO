@@ -38,8 +38,9 @@
     },
     {
       "id": "tap_contact",
-      "_desc": "연락처 목록에서 손주 이름을 눌러요. 이름은 AI가 호칭(손주 → James)으로 채운 contact 슬롯이에요.",
+      "_desc": "연락처 목록에서 손주 이름을 눌러요. 이름은 AI가 호칭(손주 → James)으로 채운 contact 슬롯이에요. 연락처 목록(dialer_contacts_container) 안에서만 찾아요: 전화 앱 첫 화면의 통화 기록 줄에도 이름이 있는데, 그걸 누르면 연락처가 아니라 줄만 펼쳐져요(11/9 확인).",
       "target": {
+        "within": {"viewId": "dialer_contacts_container"},
         "textContains": [
           "{contact}"
         ]

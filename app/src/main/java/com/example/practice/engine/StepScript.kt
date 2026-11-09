@@ -2,6 +2,7 @@ package com.example.practice.engine
 
 import android.content.Context
 import android.util.Log
+import com.example.practice.Config
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -98,7 +99,19 @@ data class Step(
     val fallbackTarget: Target? = null,
 )
 
-data class StepScript(val capability: String, val packageName: String, val steps: List<Step>)
+data class StepScript(
+    val capability: String,
+    val packageName: String,
+    val steps: List<Step>,
+    /** 목표를 마친 뒤 잠깐 더 지켜볼 것(예: 유튜브 광고의 건너뛰기 버튼). */
+    val afterDone: AfterDone? = null,
+)
+
+/**
+ * 목표 완료 뒤 forMs 동안, targets 중 하나가 화면에 보이면 그 위에 점을 띄워요.
+ * 그 버튼을 누르거나 시간이 지나면 끝나요. 안 보이면 아무것도 안 해요.
+ */
+data class AfterDone(val targets: List<Target>, val forMs: Long)
 
 /** 스텝 스크립트를 어디서 가져올지. 지금은 assets, 나중에 SDK 파트너가 자기 소스를 꽂을 수 있게 분리해 둬요. */
 interface StepScriptSource {
@@ -138,7 +151,14 @@ class AssetStepScriptSource(private val context: Context) : StepScriptSource {
                 fallbackTarget = Target.parse(s.optJSONObject("fallback_target")),
             )
         }
-        return StepScript(o.getString("capability"), o.optString("package"), steps)
+        val afterDone = o.optJSONObject("after_done")?.let { a ->
+            val watch = a.optJSONArray("watch") ?: JSONArray()
+            AfterDone(
+                targets = (0 until watch.length()).mapNotNull { Target.parse(watch.optJSONObject(it)) },
+                forMs = a.optLong("for_ms", Config.AFTER_DONE_WATCH_MS).coerceIn(1_000L, Config.AFTER_DONE_MAX_MS),
+            )
+        }
+        return StepScript(o.getString("capability"), o.optString("package"), steps, afterDone)
     }
 }
 

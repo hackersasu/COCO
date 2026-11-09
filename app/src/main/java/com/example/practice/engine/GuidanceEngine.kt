@@ -12,7 +12,7 @@ import com.example.practice.overlay.DotOverlayView
 /**
  * 목표 하나를 받아서, 단계마다 점을 어디에 띄울지 정하는 상태 머신 (PRD 7.7).
  *
- * IDLE ↔ GUIDING(stepIdx) → 완료 진동 → IDLE
+ * IDLE ↔ GUIDING(stepIdx) → 완료 진동 → (스크립트에 after_done이 있으면 WATCHING: 잠깐 더 지켜봄) → IDLE
  * - 사용자의 탭/스크롤/화면 전환을 보고 다음 단계로 넘어가요.
  * - 정정(switchTo): 새 목표의 단계 중 지금 화면에 보이는 가장 뒤 단계부터 시작하고, 점은 미끄러지듯 옮겨 가요(MOVE).
  *   아무 단계도 안 보이면 홈으로 나가라는 뜻으로 화면 아래 가운데(홈 제스처 막대)를 가리켜요.
@@ -29,10 +29,19 @@ class GuidanceEngine(
     private val keyboard: KeyboardLayout?,
     private val onDone: () -> Unit,
 ) {
-    enum class Phase { IDLE, GUIDING }
+    /** WATCHING: 목표는 끝났지만 after_done 동안 잠깐 더 지켜봐요(예: 광고 건너뛰기 버튼). */
+    enum class Phase { IDLE, GUIDING, WATCHING }
 
     var phase = Phase.IDLE
         private set
+
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val endWatching = Runnable {
+        if (phase == Phase.WATCHING) {
+            Log.i(TAG, "목표 뒤 지켜보기 끝")
+            stop()
+        }
+    }
 
     private var script: StepScript? = null
     private var stepIdx = 0
@@ -96,6 +105,7 @@ class GuidanceEngine(
     /** 안내를 멈춰요. hide = false면 점을 그대로 두고(곧바로 REJECT 흔들림을 보여 줄 때) 상태만 끝내요. */
     fun stop(hide: Boolean = true) {
         if (phase != Phase.IDLE) Log.i(TAG, "안내 멈춤")
+        handler.removeCallbacks(endWatching)
         phase = Phase.IDLE
         script = null
         lastTargetBounds = null
@@ -103,6 +113,12 @@ class GuidanceEngine(
     }
 
     fun onEvent(event: AccessibilityEvent) {
+        if (phase == Phase.WATCHING) {
+            // 클릭으로 끝내지 않아요: 버튼이 영상 화면 안에 있어서 화면만 눌러도 겹쳐 보이고, 광고가 2개 연달아 나올 수도 있어요.
+            // 버튼이 사라지면 점만 숨기고(refreshWatching), 시간이 지나면 끝나요(endWatching).
+            refresh()
+            return
+        }
         if (phase != Phase.GUIDING) return
         val step = currentStep() ?: return
         val sinceStart = SystemClock.uptimeMillis() - stepStartedAt
@@ -136,6 +152,10 @@ class GuidanceEngine(
 
     /** depth: 경로를 다시 맞춘 뒤 같은 화면을 한 번 더 보는 횟수(무한 반복 방지). */
     private fun refresh(depth: Int) {
+        if (phase == Phase.WATCHING) {
+            refreshWatching()
+            return
+        }
         if (phase != Phase.GUIDING) return
         val s = script ?: return
         finder.newFrame()
@@ -194,6 +214,8 @@ class GuidanceEngine(
 
     /** 탭 점 띄우기. 시작·정정 직후 첫 번째는 이전 자리에서 미끄러지듯 옮겨 가요(MOVE). */
     private fun tap(x: Float, y: Float) {
+        // 시연·테스트 스크립트가 점이 있는 곳을 그대로 누를 수 있게 위치를 남겨요.
+        Log.d(TAG, "점 위치 ${x.toInt()} ${y.toInt()}")
         overlay.showTap(x, y, animate = animateNextShow)
         animateNextShow = false
     }
@@ -262,18 +284,51 @@ class GuidanceEngine(
         service.windows.any { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
     }.getOrDefault(false)
 
-    /** 다음 단계로. 마지막 단계였으면 완료 진동 후 IDLE로 가고 false를 돌려줘요. */
+    /** 다음 단계로. 마지막 단계였으면 완료 진동 후 IDLE(after_done이 있으면 WATCHING)로 가고 false를 돌려줘요. */
     private fun advance(): Boolean {
         val s = script ?: return false
         val step = currentStep() ?: return false
         if (step.final || stepIdx >= s.steps.lastIndex) {
             Log.i(TAG, "목표 완료: ${s.capability}")
             onDone()
-            stop()
+            val after = s.afterDone
+            if (after != null && after.targets.isNotEmpty()) startWatching(after) else stop()
             return false
         }
         enterStep(stepIdx + 1)
         return true
+    }
+
+    /** 목표 완료 뒤 after.forMs 동안 after.targets를 지켜봐요. 점은 버튼이 보일 때만 떠요. */
+    private fun startWatching(after: AfterDone) {
+        phase = Phase.WATCHING
+        lastTargetBounds = null
+        overlay.hide()
+        handler.removeCallbacks(endWatching)
+        handler.postDelayed(endWatching, after.forMs)
+        Log.i(TAG, "목표 뒤 ${after.forMs / 1000}초 동안 지켜봐요")
+    }
+
+    private fun refreshWatching() {
+        val s = script ?: return stop()
+        val after = s.afterDone ?: return stop()
+        // 그 앱(예: 유튜브)이 앞에 있을 때만 봐요. 다른 앱의 "Skip" 같은 글자에 점이 뜨지 않게 해요(HC-5: 떠나면 기다리기).
+        val fg = service.rootInActiveWindow?.packageName?.toString()
+        val bounds = if (s.packageName.isNotEmpty() && fg != s.packageName) {
+            null
+        } else {
+            finder.newFrame()
+            after.targets.firstNotNullOfOrNull { finder.find(it.withSlots(slots)) }
+        }
+        if (bounds != null) {
+            if (lastTargetBounds == null) Log.i(TAG, "목표 뒤 안내: 버튼이 보여서 점을 띄워요")
+            lastTargetBounds = bounds
+            tap(bounds.exactCenterX(), bounds.exactCenterY())
+        } else if (lastTargetBounds != null) {
+            Log.i(TAG, "목표 뒤 안내: 버튼이 사라져서 점을 숨겨요")
+            lastTargetBounds = null
+            overlay.hide()
+        }
     }
 
     private fun enterStep(index: Int) {

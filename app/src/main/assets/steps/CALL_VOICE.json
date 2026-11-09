@@ -38,7 +38,9 @@
     },
     {
       "id": "tap_contact",
+      "_desc": "연락처 목록(dialer_contacts_container) 안에서만 찾아요. 첫 화면 통화 기록 줄의 이름은 누르면 줄만 펼쳐져요.",
       "target": {
+        "within": {"viewId": "dialer_contacts_container"},
         "textContains": [
           "{contact}"
         ]

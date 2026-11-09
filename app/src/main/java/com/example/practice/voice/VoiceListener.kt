@@ -4,10 +4,13 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.speech.RecognitionListener
+import android.speech.RecognitionSupport
+import android.speech.RecognitionSupportCallback
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.util.Log
@@ -42,9 +45,13 @@ class VoiceListener(private val context: Context) {
             return
         }
         cancel()
-        val r = SpeechRecognizer.createSpeechRecognizer(context)
+        val onDevice = useOnDevice()
+        val r = createRecognizer(onDevice)
         recognizer = r
+        val intent = recognizeIntent()
         var delivered = false
+        // 마이크로 소리가 들어오는지 확인용: 들은 동안 가장 큰 소리(dB). 말했는데도 계속 낮으면 마이크 입력이 막힌 거예요.
+        var loudest = Float.NEGATIVE_INFINITY
         fun deliver(text: String?) {
             if (delivered) return
             delivered = true
@@ -71,29 +78,126 @@ class VoiceListener(private val context: Context) {
             }
 
             override fun onError(error: Int) {
-                Log.w(TAG, "음성 인식 오류 코드 $error (7 = 말을 못 알아들음, 6 = 말이 없음, 9 = 권한 없음, 13 = 언어를 쓸 수 없음)")
-                lastError = error
+                Log.w(TAG, "음성 인식 오류 코드 $error (7 = 말을 못 알아들음, 6 = 말이 없음, 9 = 권한 없음, 13 = 언어를 쓸 수 없음), 가장 큰 소리 ${"%.1f".format(loudest)}dB")
+                val fellBack = onDevice && error in LANGUAGE_ERRORS
+                // 기본 인식기로 바꿨으면 '계속 실패하는 오류'로 보지 않아요(MONITOR가 멈추지 않고 기본 인식기로 다시 들어요).
+                lastError = if (fellBack) null else error
+                if (fellBack) {
+                    // 기기 내 인식기에 이 언어가 없으면, 다음부터는 기본 인식기를 써요.
+                    Log.w(TAG, "기기 내 인식기에 ${Config.SPEECH_LANGUAGE}가 없어서 다음부터 기본 인식기를 써요")
+                    onDeviceFailed = true
+                }
+                // 언어 팩 내려받기 요청은 여기서 하지 않아요: 다른 앱 위에 시스템 창이 뜰 수 있어서(HC-0) COCO가 켜질 때 한 번만 해요(prepareLanguage).
                 deliver(null)
             }
 
             override fun onReadyForSpeech(params: Bundle?) = Unit
-            override fun onBeginningOfSpeech() = Unit
-            override fun onRmsChanged(rmsdB: Float) = Unit
+            override fun onBeginningOfSpeech() {
+                Log.i(TAG, "말소리 감지")
+            }
+            override fun onRmsChanged(rmsdB: Float) {
+                if (rmsdB > loudest) loudest = rmsdB
+            }
             override fun onBufferReceived(buffer: ByteArray?) = Unit
             override fun onEndOfSpeech() = Unit
             override fun onEvent(eventType: Int, params: Bundle?) = Unit
         })
 
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Config.SPEECH_LANGUAGE)
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
-        }
         isListening = true
+        lastError = null
         r.startListening(intent)
-        Log.i(TAG, "듣기 시작")
+        Log.i(TAG, "듣기 시작 (${if (onDevice) "기기 내 인식기" else "기본 인식기"})")
+        // 인식기가 끝내 답을 안 주는 경우(예: 마이크로 소리가 안 들어옴)를 막아요. 멈춰 보고, 그래도 답이 없으면 못 들은 걸로 해요.
+        main.postDelayed({
+            if (delivered || recognizer !== r) return@postDelayed
+            Log.w(TAG, "듣기 시간 초과(${Config.LISTEN_MAX_MS / 1000}초), 가장 큰 소리 ${"%.1f".format(loudest)}dB")
+            r.stopListening()
+            main.postDelayed({
+                // 그사이 취소됐거나 새로 듣기 시작했으면(recognizer가 바뀜) 건드리지 않아요.
+                if (!delivered && recognizer === r) {
+                    r.cancel()
+                    lastError = SpeechRecognizer.ERROR_SPEECH_TIMEOUT
+                    deliver(null)
+                }
+            }, Config.LISTEN_STOP_GRACE_MS)
+        }, Config.LISTEN_MAX_MS)
+    }
+
+    /** 기기 내 인식기가 이 언어로 실패한 적이 있으면 true(그 뒤로는 기본 인식기). */
+    private var onDeviceFailed = false
+
+    /**
+     * 어떤 인식기를 쓸지. 기기 내 인식기(Android System Intelligence)를 먼저 써요.
+     * 에뮬레이터에서는 설정 → 시스템 → 언어 → 음성 → 기기 내 인식에서 English (US)를 내려받으면 이쪽이 동작해요.
+     * 기기 내 인식기가 없거나 이 언어로 실패했으면 기본 인식기(Google 음성 서비스 등)를 써요.
+     */
+    private fun useOnDevice(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            !onDeviceFailed &&
+            SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
+
+    private fun createRecognizer(onDevice: Boolean): SpeechRecognizer =
+        if (onDevice && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+        } else {
+            SpeechRecognizer.createSpeechRecognizer(context)
+        }
+
+    private fun recognizeIntent() = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE, Config.SPEECH_LANGUAGE)
+        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+        putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+        putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
+    }
+
+    /**
+     * COCO가 켜질 때 한 번: 음성 인식기에 Config.SPEECH_LANGUAGE 언어 팩이 있는지 보고, 없으면 미리 내려받게 해요.
+     * 그래야 처음 말할 때 "언어를 쓸 수 없음(13)" 오류가 안 나요. Android 13 미만은 확인할 방법이 없어서 건너뛰어요.
+     */
+    fun prepareLanguage() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (!SpeechRecognizer.isRecognitionAvailable(context)) return
+        val onDevice = useOnDevice()
+        val r = createRecognizer(onDevice)
+        val intent = recognizeIntent()
+        val lang = Config.SPEECH_LANGUAGE
+        Log.i(TAG, "음성 인식기: ${if (onDevice) "기기 내 인식기" else "기본 인식기"}")
+        runCatching {
+            r.checkRecognitionSupport(intent, { main.post(it) }, object : RecognitionSupportCallback {
+                override fun onSupportResult(support: RecognitionSupport) {
+                    fun List<String>.has() = any { it.equals(lang, ignoreCase = true) }
+                    val installed = support.installedOnDeviceLanguages.has()
+                    val pending = support.pendingOnDeviceLanguages.has()
+                    val online = support.onlineLanguages.has()
+                    Log.i(TAG, "음성 인식 언어 $lang: 기기에 있음=$installed, 내려받는 중=$pending, 온라인=$online")
+                    if (onDevice && !installed) {
+                        // 기기 내 인식기에 아직 언어가 없으면 처음부터 기본 인식기를 써요(첫 말을 놓치지 않게).
+                        Log.i(TAG, "기기 내 인식기에 $lang 가 아직 없어서 기본 인식기를 써요")
+                        onDeviceFailed = true
+                    }
+                    if (!installed && !pending && !online && support.supportedOnDeviceLanguages.has()) {
+                        requestLanguageDownload(r, intent)
+                    }
+                    main.post { r.destroy() }
+                }
+
+                override fun onError(error: Int) {
+                    Log.w(TAG, "음성 인식 언어 확인 실패(오류 $error)")
+                    main.post { r.destroy() }
+                }
+            })
+        }.onFailure {
+            Log.w(TAG, "음성 인식 언어 확인 실패", it)
+            r.destroy()
+        }
+    }
+
+    private fun requestLanguageDownload(r: SpeechRecognizer, intent: Intent) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        runCatching { r.triggerModelDownload(intent) }
+            .onSuccess { Log.i(TAG, "음성 인식 언어 팩(${Config.SPEECH_LANGUAGE}) 내려받기를 요청했어요. 잠시 뒤 다시 말해 보세요.") }
+            .onFailure { Log.w(TAG, "음성 인식 언어 팩 내려받기 요청 실패", it) }
     }
 
     /** 마지막 듣기의 오류 코드(없으면 null). */
@@ -173,12 +277,15 @@ class VoiceListener(private val context: Context) {
 
     private companion object {
         const val TAG = "COCO"
+        const val ERROR_LANGUAGE_NOT_SUPPORTED = 12 // SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED (API 31)
+        const val ERROR_LANGUAGE_UNAVAILABLE = 13 // SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE (API 31)
+        val LANGUAGE_ERRORS = setOf(ERROR_LANGUAGE_NOT_SUPPORTED, ERROR_LANGUAGE_UNAVAILABLE) // 언어 미지원, 언어 팩 없음
 
         /** 다시 해도 계속 실패하는 오류: 권한 없음, 언어 미지원, 언어 사용 불가, 지원 확인 불가. */
         val PERMANENT_ERRORS = setOf(
             SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS, // 9
-            12, // ERROR_LANGUAGE_NOT_SUPPORTED
-            13, // ERROR_LANGUAGE_UNAVAILABLE
+            ERROR_LANGUAGE_NOT_SUPPORTED,
+            ERROR_LANGUAGE_UNAVAILABLE,
             14, // ERROR_CANNOT_CHECK_SUPPORT
         )
     }

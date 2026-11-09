@@ -30,4 +30,4 @@ cd ~/.claude/skills/gstack && ./setup --team
 ```
 
 Skills like /qa, /ship, /review and /browse become available after install.
-Use /browse for all web browsing (Aside first, the bundled gstack browser as fallback). Use ~/.claude/skills/gstack/... for gstack file paths.
+Use ~/.claude/skills/gstack/... for gstack file paths.

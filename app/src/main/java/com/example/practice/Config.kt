@@ -57,4 +57,10 @@ object Config {
 
     // 음성 인식 언어. 대회 시연이 영어라 en-US. 한국어로 말하려면 "ko-KR".
     const val SPEECH_LANGUAGE = "en-US"
+    const val LISTEN_MAX_MS = 10_000L // 한 번 들을 때 최대 시간. 인식기가 답을 안 주면 이만큼 뒤에 멈춰요.
+    const val LISTEN_STOP_GRACE_MS = 2_000L // 멈춘 뒤에도 답이 없으면 이만큼 더 기다렸다가 못 들은 걸로 해요.
+
+    // 목표를 마친 뒤 잠깐 더 지켜보기(after_done, 예: 유튜브 광고 건너뛰기). 스크립트의 for_ms가 없을 때 기본값과 최대값.
+    const val AFTER_DONE_WATCH_MS = 30_000L
+    const val AFTER_DONE_MAX_MS = 60_000L
 }

@@ -100,7 +100,7 @@ class CocoAccessibilityService : AccessibilityService() {
                 voice?.stopMonitor()
             },
         )
-        voice = VoiceListener(this)
+        voice = VoiceListener(this).also { it.prepareLanguage() }
         rankClient = catalog?.let { RankClient(it, loadDemoRankings()) }
         val log = CorrectionLog(this)
         corrections = log
@@ -169,6 +169,11 @@ class CocoAccessibilityService : AccessibilityService() {
             pendingSinglePress = single
             main.postDelayed(single, Config.BUTTON_DOUBLE_PRESS_MS)
             return
+        }
+        if (engine?.phase == GuidanceEngine.Phase.WATCHING) {
+            // 목표 뒤 지켜보기(예: 광고 건너뛰기) 중이면 끝내고 새로 들어요. 버튼은 늘 '코코 부르기'예요.
+            Log.i(TAG, "지켜보기 끝내고 새로 듣기")
+            engine?.stop()
         }
         if (isBusy()) {
             Log.i(TAG, "코코 멈춤")

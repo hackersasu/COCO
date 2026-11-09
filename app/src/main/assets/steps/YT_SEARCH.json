@@ -47,5 +47,14 @@
       "done_when": {"clicked_target": true, "node_appears": {"viewId": "com.google.android.youtube:id/watch_player"}},
       "final": true
     }
-  ]
+  ],
+  "after_done": {
+    "_desc": "영상을 연 뒤 30초 동안 광고 건너뛰기 버튼을 지켜봐요. 보이면 점을 띄우고, 누르거나 시간이 지나면 끝. 광고가 없으면 아무것도 안 해요.",
+    "for_ms": 30000,
+    "watch": [
+      {"viewId": "com.google.android.youtube:id/skip_ad_button"},
+      {"descContains": ["Skip ad", "광고 건너뛰기"]},
+      {"text": ["Skip", "건너뛰기"]}
+    ]
+  }
 }

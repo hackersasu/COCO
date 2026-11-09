@@ -85,3 +85,9 @@ Unit tests: `./gradlew :app:testDebugUnitTest` (24 tests). For the photo demo, `
 - **More tasks with full guidance:** text size, KakaoTalk messages and photos.
 - **Korean voice** and Samsung Galaxy apps.
 - **Waiting through interruptions.** If a call comes in mid-task, the dot waits and resumes afterwards.
+
+
+## Team
+
+- **Seonyeong** (@IamSeonyeong)
+- **Hyunseo** (@hackersasu)

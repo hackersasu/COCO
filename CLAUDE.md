@@ -18,3 +18,16 @@ AI(GPT)는 목표만 정한 뒤 하드코딩된 스텝 스크립트를 따라 �
 - 단위 테스트: `./gradlew :app:testDebugUnitTest`
 - 빌드: `./gradlew :app:assembleDebug` (터미널에서는 `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"` 필요)
 - 로그: `adb logcat -s COCO`
+
+## gstack (recommended)
+
+This project uses [gstack](https://github.com/garrytan/gstack) for AI-assisted workflows.
+Install it for the best experience:
+
+```bash
+git clone --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack
+cd ~/.claude/skills/gstack && ./setup --team
+```
+
+Skills like /qa, /ship, /review and /browse become available after install.
+Use /browse for all web browsing (Aside first, the bundled gstack browser as fallback). Use ~/.claude/skills/gstack/... for gstack file paths.

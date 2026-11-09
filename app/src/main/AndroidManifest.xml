@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 코코가 GPT API를 부르려면 인터넷 권한이 필요해요(M2). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 목표를 끝내면 짧게 진동해요. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- "코코야" 하고 말한 내용을 들어요(M2). 설정 화면에서 허용을 받아요. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- 홈 화면 앱(런처)이 무엇인지 알아내려고 필요해요. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+        <!-- 안드로이드 기본 음성 인식 서비스를 찾으려고 필요해요(M2). -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Practice">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Practice"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- COCO 본체: 접근성 서비스. 설정 > 접근성에서 켜야 동작해요. -->
+        <service
+            android:name=".CocoAccessibilityService"
+            android:exported="true"
+            android:label="@string/coco_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+    </application>
+
+</manifest>

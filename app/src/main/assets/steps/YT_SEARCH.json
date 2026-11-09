@@ -1,0 +1,51 @@
+{
+  "capability": "YT_SEARCH",
+  "package": "com.google.android.youtube",
+  "_note": "AI는 목표(YT_SEARCH)와 슬롯(query)만 정하고, 아래 순서는 하드코딩. 선택자는 에뮬레이터(영어, YouTube 21.18) uiautomator dump로 확인한 값이고, 갤럭시(한국어)용 문구는 배열에 함께 넣어 둠. 시연 폰에서 다시 dump해서 확인할 것.",
+  "steps": [
+    {
+      "id": "open_app",
+      "screen": "launcher",
+      "target": {"text": ["YouTube", "유튜브"]},
+      "gesture": "tap",
+      "difficulty": 1,
+      "done_when": {"package_foreground": "com.google.android.youtube"}
+    },
+    {
+      "id": "tap_search",
+      "target": {"viewId": "com.google.android.youtube:id/menu_item_view", "desc": ["Search", "검색"]},
+      "gesture": "tap",
+      "difficulty": 2,
+      "done_when": {"clicked_target": true, "node_appears": {"viewId": "com.google.android.youtube:id/search_edit_text"}}
+    },
+    {
+      "id": "type_query",
+      "_desc": "자판에서 검색어를 한 키씩 치게 안내. 키 좌표는 keyboard.json. 칠 수 없으면 마이크를 가리킴.",
+      "target": {"viewId": "com.google.android.youtube:id/search_edit_text"},
+      "gesture": "type",
+      "text": "{query}",
+      "fallback_target": {"viewId": "com.google.android.youtube:id/voice_search"},
+      "difficulty": 3,
+      "pause_listening": true,
+      "done_when": {"node_appears": {"viewId": "com.google.android.youtube:id/search_query"}}
+    },
+    {
+      "id": "scroll_results",
+      "screen_has": {"viewId": "com.google.android.youtube:id/search_query"},
+      "target": {"viewId": "com.google.android.youtube:id/results"},
+      "gesture": "scroll_up",
+      "difficulty": 2,
+      "done_when": {"user_scrolled": true}
+    },
+    {
+      "id": "tap_video",
+      "_desc": "특정 영상을 고정하려면 descContains에 영상 제목 일부를 넣으면 됨. 지금은 첫 번째 영상.",
+      "screen_has": {"viewId": "com.google.android.youtube:id/search_query"},
+      "target": {"descContains": ["play video", "동영상 재생"]},
+      "gesture": "tap",
+      "difficulty": 1,
+      "done_when": {"clicked_target": true, "node_appears": {"viewId": "com.google.android.youtube:id/watch_player"}},
+      "final": true
+    }
+  ]
+}

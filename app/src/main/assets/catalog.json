@@ -1,0 +1,38 @@
+{
+  "_note": "AI가 고를 수 있는 기능 목록(PRD 6.1). AI는 이 목록 안에서만 고른다. labels는 홈 화면 아이콘 이름(에뮬레이터 영어 + 갤럭시 한국어). packages는 시연 폰에서 'adb shell pm list packages | grep -i <이름>'으로 다시 확인할 것.",
+  "apps": {
+    "유튜브": {"labels": ["YouTube", "유튜브"], "packages": ["com.google.android.youtube"]},
+    "카카오톡": {"labels": ["카카오톡", "KakaoTalk"], "packages": ["com.kakao.talk"]},
+    "카카오맵": {"labels": ["카카오맵", "KakaoMap"], "packages": ["TODO(dump)"]},
+    "갤러리": {"labels": ["갤러리", "Gallery", "Photos"], "packages": ["com.sec.android.gallery3d", "com.google.android.apps.photos"]},
+    "카메라": {"labels": ["카메라", "Camera"], "packages": ["TODO(dump)", "com.android.camera2"]},
+    "전화": {"labels": ["전화", "Phone"], "packages": ["TODO(dump)", "com.google.android.dialer"]},
+    "문자": {"labels": ["메시지", "Messages"], "packages": ["TODO(dump)", "com.google.android.apps.messaging"]},
+    "설정": {"labels": ["설정", "Settings"], "packages": ["com.android.settings"]}
+  },
+  "capabilities": [
+    {"id": "YT_SEARCH", "app": "유튜브", "description": "유튜브에서 무언가를 검색해서 영상으로 본다(모르는 것을 영상으로 알아보기 포함)", "examples": ["애들이 뉴진스 얘기하던데", "리센느가 뭐야?"], "slots": ["query"]},
+    {"id": "YT_FULLSCREEN", "app": "유튜브", "description": "보고 있는 유튜브 영상을 전체 화면으로 크게 본다", "examples": ["화면이 너무 작아"], "slots": []},
+    {"id": "KT_SEND_TEXT", "app": "카카오톡", "description": "카카오톡으로 가족에게 메시지를 보낸다", "examples": ["밥은 먹고 다니나 몰라"], "slots": ["contact", "message"]},
+    {"id": "KT_SEND_PHOTO", "app": "카카오톡", "description": "카카오톡으로 사진을 보낸다", "examples": ["어제 찍은 사진 아들한테", "그거 있잖아 사진 보내는 거"], "slots": ["contact", "photo"]},
+    {"id": "KT_FACETALK", "app": "카카오톡", "description": "카카오톡 페이스톡(영상통화)을 건다", "examples": ["손주랑 얼굴 보면서 얘기하고 싶어"], "slots": ["contact"]},
+    {"id": "KT_UNREAD", "app": "카카오톡", "description": "안 읽은 카카오톡 메시지를 확인한다", "examples": ["누가 연락했나?"], "slots": []},
+    {"id": "CALL_VOICE", "app": "전화", "description": "전화(음성통화)를 건다", "examples": ["큰애한테 전화 좀"], "slots": ["contact"]},
+    {"id": "CALL_VIDEO", "app": "전화", "description": "영상통화를 건다", "examples": ["손주 얼굴 보고 싶어"], "slots": ["contact"]},
+    {"id": "CALL_MISSED", "app": "전화", "description": "놓친 전화(부재중)를 확인한다", "examples": ["아까 누가 전화했던데"], "slots": []},
+    {"id": "SMS_READ_CODE", "app": "문자", "description": "문자로 온 인증번호를 확인한다", "examples": ["번호가 왔다는데 어디 있어"], "slots": []},
+    {"id": "SMS_SEND", "app": "문자", "description": "문자 메시지를 보낸다", "examples": ["문자로 보내줘"], "slots": ["contact", "message"]},
+    {"id": "CAM_PHOTO", "app": "카메라", "description": "사진을 찍는다", "examples": ["사진 찍어줘"], "slots": []},
+    {"id": "CAM_SELFIE", "app": "카메라", "description": "앞 카메라로 내 얼굴을 찍는다", "examples": ["내 얼굴 찍을래"], "slots": []},
+    {"id": "CAM_MAGNIFIER", "app": "카메라", "description": "카메라를 돋보기처럼 써서 종이·약봉투 같은 실물 글씨를 크게 본다", "examples": ["약봉투 글씨가 안 보이네"], "slots": []},
+    {"id": "GAL_RECENT", "app": "갤러리", "description": "최근 사진이나 특정 사람(손주 등)의 사진을 본다", "examples": ["손주 보고 싶네(밤)", "손주 사진 보고 싶네", "어제 찍은 사진 어디 갔어"], "slots": ["date", "album"]},
+    {"id": "GAL_ZOOM", "app": "갤러리", "description": "사진을 크게 확대해서 본다", "examples": ["사진을 크게 보고 싶어"], "slots": []},
+    {"id": "MAP_ROUTE", "app": "카카오맵", "description": "목적지까지 가는 길을 찾는다", "examples": ["서울대병원 어떻게 가"], "slots": ["destination"]},
+    {"id": "MAP_NEARBY", "app": "카카오맵", "description": "근처의 약국·병원 같은 장소를 찾는다", "examples": ["근처에 약국 있나"], "slots": ["place_type"]},
+    {"id": "SET_FONT", "app": "설정", "description": "폰 화면의 글자 크기를 키운다", "examples": ["폰 글씨가 너무 작아"], "slots": []},
+    {"id": "SET_VOLUME", "app": "설정", "description": "벨소리·통화 소리 크기를 키운다", "examples": ["전화 소리가 안 나"], "slots": []},
+    {"id": "SET_BRIGHTNESS", "app": "설정", "description": "화면 밝기를 올린다", "examples": ["화면이 어두워"], "slots": []},
+    {"id": "SET_WIFI", "app": "설정", "description": "와이파이(인터넷) 연결을 켠다", "examples": ["인터넷이 안 돼"], "slots": []},
+    {"id": "OUT_OF_SCOPE", "app": null, "description": "폰 기본 앱 기능으로 해결할 수 없는 요청(금융, 정보 질문 등)", "examples": ["통장에 돈 얼마 있어"], "slots": []}
+  ]
+}

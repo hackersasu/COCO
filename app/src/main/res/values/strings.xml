@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">COCO</string>
+    <string name="coco_service_label">COCO</string>
+    <string name="coco_service_description">하고 싶은 일을 말하면, 다음에 누를 곳을 작은 파란 점 하나로 가리켜요. 대신 눌러 주지 않아요. 화면 내용은 기기 밖으로 보내지 않아요.</string>
+</resources>

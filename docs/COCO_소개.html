@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>COCO 파란 점</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@500;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow reading column with a quiet vertical "path" at left; the blue dot is the only accent and marks where to look. */
+:root{
+  --bg:#F6F8FB; --surface:#FFFFFF; --ink:#0F1725; --muted:#5B6678; --line:#DCE2EB;
+  --dot:#2160F3; --dot-soft:#E4ECFE; --dot-ink:#1846B8; --warn:#B4541A; --warn-soft:#FBEDE3; --ok:#1E7A4F; --ok-soft:#E2F3EA;
+  --f-display:"Hahmlet","Nanum Myeongjo",Georgia,serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1018; --surface:#121A26; --ink:#E7ECF4; --muted:#93A0B3; --line:#243044;
+  --dot:#5E8FFF; --dot-soft:#17233B; --dot-ink:#9BB9FF; --warn:#F0A06B; --warn-soft:#2E1E12; --ok:#6FD3A0; --ok-soft:#10261B; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1018; --surface:#121A26; --ink:#E7ECF4; --muted:#93A0B3; --line:#243044;
+  --dot:#5E8FFF; --dot-soft:#17233B; --dot-ink:#9BB9FF; --warn:#F0A06B; --warn-soft:#2E1E12; --ok:#6FD3A0; --ok-soft:#10261B; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.7;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1040px;margin:0 auto;padding-block:40px 96px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.25;margin:0}
+h1{font-size:clamp(34px,6vw,58px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:clamp(26px,3.6vw,34px);font-weight:700}
+h3{font-size:19px;font-weight:700}
+p{margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lead{font-size:18px;color:var(--ink);max-width:62ch}
+.muted{color:var(--muted)}
+code,.mono{font-family:var(--f-mono);font-size:.88em}
+a{color:var(--dot-ink)}
+:focus-visible{outline:2px solid var(--dot);outline-offset:3px;border-radius:4px}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.9fr);gap:48px;align-items:center;padding-block:24px 56px}
+.hero-text{display:flex;flex-direction:column;gap:20px;min-width:0}
+.hero h1 .d{color:var(--dot)}
+.tagline{font-family:var(--f-mono);font-size:14px;color:var(--dot-ink)}
+.phone{justify-self:center;width:min(280px,100%);aspect-ratio:9/18.5;border:1.5px solid var(--line);border-radius:38px;background:var(--surface);
+  padding:22px 18px;position:relative;display:flex;flex-direction:column;gap:14px;max-width:100%}
+.phone .notch{width:72px;height:6px;border-radius:6px;background:var(--line);align-self:center}
+.bubble{font-size:13px;line-height:1.45;padding:9px 12px;border-radius:14px;max-width:88%}
+.bubble.user{background:var(--bg);border:1px solid var(--line);align-self:flex-end;border-bottom-right-radius:4px}
+.bubble.coco{background:var(--dot-soft);color:var(--dot-ink);align-self:flex-start;border-bottom-left-radius:4px}
+.apps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 8px;margin-top:auto}
+.app{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:10.5px;color:var(--muted);position:relative}
+.app i{display:block;width:100%;max-width:44px;aspect-ratio:1;border-radius:12px;background:var(--bg);border:1px solid var(--line)}
+.target-dot{position:absolute;top:12px;left:50%;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:var(--dot)}
+.target-dot::after{content:"";position:absolute;inset:-8px;border-radius:50%;border:2px solid var(--dot);opacity:0;animation:pulse 1.6s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.5);opacity:.8}100%{transform:scale(1.6);opacity:0}}
+
+.toc{display:flex;flex-wrap:wrap;gap:8px;padding-block:8px 8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:24px;padding-top:14px;padding-bottom:14px}
+.toc a{font-size:13px;text-decoration:none;color:var(--ink);padding:5px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.toc a:hover{border-color:var(--dot);color:var(--dot-ink)}
+
+/* sections along a path */
+section{position:relative;padding:56px 0 8px 36px;display:flex;flex-direction:column;gap:22px}
+section::before{content:"";position:absolute;left:7px;top:0;bottom:0;width:1px;background:var(--line)}
+section::after{content:"";position:absolute;left:2px;top:66px;width:11px;height:11px;border-radius:50%;background:var(--bg);border:2px solid var(--dot)}
+section.key::after{background:var(--dot)}
+.sec-head{display:flex;flex-direction:column;gap:8px;max-width:70ch}
+
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.quote{font-family:var(--f-display);font-size:19px;font-weight:500}
+.callout{border-left:3px solid var(--dot);padding:4px 0 4px 16px;font-size:17px;max-width:66ch}
+
+ol.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;counter-reset:s}
+ol.steps li{counter-increment:s;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+ol.steps li::before{content:counter(s);font-family:var(--f-mono);font-size:12px;color:var(--dot-ink);width:24px;height:24px;border-radius:50%;background:var(--dot-soft);display:grid;place-items:center}
+ol.steps b{font-size:15px}
+ol.steps span{font-size:13.5px;color:var(--muted);line-height:1.55}
+
+pre{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow-x:auto;font-family:var(--f-mono);font-size:13px;line-height:1.6;white-space:pre}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:600px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;font-family:var(--f-mono);letter-spacing:.05em;color:var(--muted);font-weight:500;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:11.5px;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p0{background:var(--dot);color:#fff}
+.p1{background:var(--dot-soft);color:var(--dot-ink)}
+.p2{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.p3{background:var(--warn-soft);color:var(--warn)}
+
+/* catalog */
+.app-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.app-card h3{font-family:var(--f-body);font-size:15px;font-weight:600}
+.cap{display:flex;flex-direction:column;gap:2px;font-size:13.5px;line-height:1.5}
+.cap code{font-size:11.5px;color:var(--muted)}
+.cap .say{color:var(--ink)}
+.cap.star .say::before{content:"★ ";color:var(--dot)}
+
+/* gestures */
+.g-tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.g-stage{height:120px;border-radius:10px;background:var(--bg);position:relative;overflow:hidden}
+.g-tile b{font-size:14.5px}
+.g-tile span{font-size:13px;color:var(--muted);line-height:1.5}
+.gd{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--dot);left:50%;top:50%;margin:-8px 0 0 -8px}
+.g-tap .gd{animation:tap 1.6s ease-in-out infinite}
+@keyframes tap{0%,60%,100%{transform:scale(1)}20%{transform:scale(.7)}35%{transform:scale(1.15)}}
+.g-dbl .gd{animation:dbl 1.8s ease-in-out infinite}
+@keyframes dbl{0%,50%,100%{transform:scale(1)}10%{transform:scale(.7)}18%{transform:scale(1.1)}26%{transform:scale(.7)}34%{transform:scale(1.1)}}
+.g-long svg{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;transform:rotate(-90deg)}
+.g-long circle.r{fill:none;stroke:var(--dot);stroke-width:3;stroke-dasharray:126;stroke-dashoffset:126;animation:ring 2.2s linear infinite}
+.g-long circle.t{fill:none;stroke:var(--line);stroke-width:3}
+@keyframes ring{0%{stroke-dashoffset:126}75%,100%{stroke-dashoffset:0}}
+.g-scroll svg{position:absolute;left:50%;top:10px;width:40px;height:100px;margin-left:-20px}
+.g-scroll .brush{fill:var(--dot)}
+.g-scroll .mask-r{animation:brush 1.4s cubic-bezier(.5,0,.3,1) infinite}
+@keyframes brush{0%{transform:translateY(-100px)}55%,80%{transform:translateY(0)}100%{transform:translateY(0);opacity:0}}
+.g-pinch .gd.a{animation:pa 1.8s ease-in-out infinite}
+.g-pinch .gd.b{animation:pb 1.8s ease-in-out infinite}
+@keyframes pa{0%,15%{transform:translate(-6px,6px)}70%,100%{transform:translate(-34px,30px)}}
+@keyframes pb{0%,15%{transform:translate(6px,-6px)}70%,100%{transform:translate(34px,-30px)}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important}.g-long circle.r{stroke-dashoffset:40}}
+
+/* platform diagram */
+.platform{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1.4fr);gap:20px;align-items:center}
+.engine{background:var(--dot);color:#fff;border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:6px}
+.engine h3{color:#fff}
+.engine p{font-size:14px;opacity:.9}
+.arrow{font-family:var(--f-mono);color:var(--muted);font-size:22px}
+.forms{display:flex;flex-direction:column;gap:10px}
+.form{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px;align-items:baseline}
+.form b{font-family:var(--f-mono);font-size:12px;color:var(--dot-ink);letter-spacing:.04em}
+
+/* video timeline */
+.tl{display:flex;width:100%;height:46px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.tl div{border-right:1px solid var(--line);background:var(--surface);font-family:var(--f-mono);font-size:11px;display:grid;place-items:center;color:var(--muted);min-width:0;overflow:hidden;white-space:nowrap}
+.tl div:last-child{border-right:0}
+.tl div.hi{background:var(--dot-soft);color:var(--dot-ink)}
+.tl-axis{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-top:4px}
+
+/* plan */
+.plan{display:grid;grid-template-columns:92px minmax(0,1fr) minmax(0,1fr);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.plan > div{padding:12px 14px;border-bottom:1px solid var(--line);font-size:14px;line-height:1.55;min-width:0}
+.plan .t{font-family:var(--f-mono);font-size:12px;color:var(--muted);border-right:1px solid var(--line);background:var(--bg)}
+.plan .a{border-right:1px solid var(--line)}
+.plan .hd{font-family:var(--f-mono);font-size:12px;letter-spacing:.05em;color:var(--muted);background:var(--bg)}
+.plan .both{grid-column:2 / 4;background:var(--dot-soft);color:var(--dot-ink)}
+.plan > div:nth-last-child(-n+1){border-bottom:0}
+.plan ul{margin:4px 0 0;padding-left:18px}
+.gate{display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.gate:last-child{border-bottom:0}
+.gate .when{font-family:var(--f-mono);font-size:12.5px;color:var(--dot-ink)}
+
+/* prompt */
+.prompt-box{display:flex;flex-direction:column;gap:10px}
+.prompt-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+button.copy{font-family:var(--f-body);font-size:14px;padding:8px 16px;border-radius:999px;border:1px solid var(--dot);background:var(--dot);color:#fff;cursor:pointer}
+button.copy.ghost{background:transparent;color:var(--dot-ink)}
+.prompt-box pre{max-height:460px;overflow:auto;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+details summary{cursor:pointer;font-weight:600;font-size:15px}
+details[open] summary{margin-bottom:10px}
+details pre{border:0;padding:0;background:transparent;white-space:pre-wrap;overflow-wrap:anywhere}
+ul.clean{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+
+@media (max-width:860px){
+  .hero{grid-template-columns:minmax(0,1fr)}
+  .grid4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid3{grid-template-columns:minmax(0,1fr)}
+  ol.steps{grid-template-columns:minmax(0,1fr)}
+  .platform{grid-template-columns:minmax(0,1fr)}
+  .arrow{transform:rotate(90deg);justify-self:center}
+  .plan{grid-template-columns:minmax(0,1fr)}
+  .plan .t,.plan .a{border-right:0}
+  .plan .hd{display:none}
+  .plan .both{grid-column:auto}
+  .plan .a::before{content:"A · 개발";display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+  .plan .b::before{content:"B · 기획·AI·영상";display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+}
+@media (max-width:520px){
+  .grid2,.grid4{grid-template-columns:minmax(0,1fr)}
+  section{padding-left:24px}
+  .form{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+
+<header class="hero">
+  <div class="hero-text">
+    <span class="eyebrow">c0mpiled-17 Seoul · AI for the Aging Population</span>
+    <h1>누르는 건 어르신,<br>가리키는 건 코코<span class="d">.</span></h1>
+    <p class="lead">COCO(코코)는 스마트폰을 쓰는 어르신을 위한 작은 파란 점 조수예요. "코코야~" 하고 부른 뒤 하고 싶은 일을 편하게 말하면, 코코가 그 말을 폰의 기능으로 바꾸고 다음에 누를 곳을 점 하나로 가리켜요. 대신 눌러 주지 않아요. 어르신이 직접 누르면서 폰을 익혀요.</p>
+    <p class="tagline">Meet COCO. You tap. COCO points the way.</p>
+  </div>
+  <div class="phone" aria-label="코코가 유튜브 아이콘을 가리키는 화면 예시">
+    <span class="notch"></span>
+    <div class="bubble user">애들이 뉴진스 얘기하던데, 그게 뭐야?</div>
+    <div class="bubble coco">뉴진스는 아이돌 그룹이에요. 유튜브에서 무대를 볼까요? 파란 점을 눌러 보세요.</div>
+    <div class="apps">
+      <div class="app"><i></i>카카오톡</div>
+      <div class="app"><i></i>카카오맵</div>
+      <div class="app"><i></i>유튜브<span class="target-dot"></span></div>
+      <div class="app"><i></i>갤러리</div>
+      <div class="app"><i></i>카메라</div>
+      <div class="app"><i></i>전화</div>
+      <div class="app"><i></i>문자</div>
+      <div class="app"><i></i>설정</div>
+    </div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="목차">
+  <a href="#problem">문제</a><a href="#how">작동 방식</a><a href="#engine">번역 엔진</a><a href="#catalog">기능 카탈로그</a>
+  <a href="#gesture">파란 점의 언어</a><a href="#tech">기술 구조</a><a href="#platform">확장성</a><a href="#video">데모 영상</a>
+  <a href="#plan">5시간 플랜</a><a href="#next">넥스트 스텝</a><a href="#prompt">클로드 코드 프롬프트</a>
+</nav>
+
+<section id="problem">
+  <div class="sec-head">
+    <span class="eyebrow">문제</span>
+    <h2>어디를 눌러야 할지 모르는 순간</h2>
+    <p>손주들이 뉴진스 이야기를 할 때, 우리는 바로 검색해요. 어르신은 어디에 검색해야 하는지, 검색이라는 기능이 있는지부터 막혀요. 앱마다 무슨 기능이 있는지 모르는 상태에서 하고 싶은 일이 생기면, 그 일을 조작으로 바꾸는 단계에서 멈추게 돼요.</p>
+  </div>
+  <div class="grid3">
+    <div class="box"><p class="quote">"틀릴까 봐 무섭다"</p><p class="muted">잘못 누르면 뭔가 망가질 것 같아서 시도 자체를 안 해요.</p></div>
+    <div class="box"><p class="quote">"남한테 묻기 미안하다"</p><p class="muted">자녀나 손주에게 같은 걸 또 묻는 게 부담스러워요.</p></div>
+    <div class="box"><p class="quote">"혼자 해내고 싶다"</p><p class="muted">대신 해 주는 것보다 스스로 할 수 있게 되는 걸 원해요.</p></div>
+  </div>
+  <p class="callout">그래서 코코는 대신 해 주지 않아요. 가장 덜 방해되는 크기의 점으로 다음 한 걸음만 보여 주고, 누르는 건 어르신 몫으로 남겨요. 자기 주체감을 지키는 것이 설계의 출발점이에요.</p>
+</section>
+
+<section id="how">
+  <div class="sec-head">
+    <span class="eyebrow">작동 방식</span>
+    <h2>부르고, 말하고, 점을 따라 누르기</h2>
+  </div>
+  <ol class="steps">
+    <li><b>부르기</b><span>"코코야~" 하고 부르면 깨어나요. 해커톤에서는 화면 가장자리의 작은 코코 버튼으로 대체할 수 있어요.</span></li>
+    <li><b>듣기</b><span>Android 기본 음성 인식으로 한국어 발화를 텍스트로 바꿔요.</span></li>
+    <li><b>이해</b><span>AI가 두서없는 말을 미리 정의한 기능 목록 중 하나에 연결하고, 필요한 정보(대상, 검색어 등)를 뽑아요.</span></li>
+    <li><b>안내</b><span>코드에 정의된 단계별 스크립트가 현재 화면의 버튼을 찾아 파란 점을 띄워요. 점은 터치를 막지 않아요.</span></li>
+    <li><b>목표 유지</b><span>전화가 와도 목표를 기억하고, 돌아오면 다음 단계를 다시 가리켜요. "코코야 그만"이라고 할 때만 멈춰요.</span></li>
+  </ol>
+  <p class="muted">이해 단계에서 AI가 돌려주는 결과 예시:</p>
+<pre>{"capability": "YT_SEARCH",
+ "slots": {"query": "뉴진스 무대"},
+ "confidence": 0.91,
+ "reason": "뉴진스 = K-pop 그룹 → 글보다 영상이 이해하기 쉬움 → 유튜브",
+ "say": "뉴진스는 아이돌 그룹이에요. 유튜브에서 무대를 볼까요?",
+ "ask": null}</pre>
+</section>
+
+<section id="engine" class="key">
+  <div class="sec-head">
+    <span class="eyebrow">핵심</span>
+    <h2>어르신의 말을 폰의 기능으로 번역하는 엔진</h2>
+    <p>각 앱이 해 줄 수 있는 기능은 코드에 하드코딩하고, AI는 음성을 듣고 그중 가장 관련 깊은 기능 하나를 고르는 일만 해요.</p>
+  </div>
+  <div class="grid3">
+    <div class="box"><h3>믿을 수 있어요</h3><p class="muted">AI는 목록 안에서만 고르기 때문에 없는 기능을 지어낼 수 없어요. 실행은 정해진 스크립트가 맡아요.</p></div>
+    <div class="box"><h3>빠르고 싸요</h3><p class="muted">분류 한 번이면 되어서 gpt-4o-mini로 충분해요. 응답도 1초 안팎이에요.</p></div>
+    <div class="box"><h3>자산이 선명해요</h3><p class="muted">"어르신 말 → 폰 기능" 사전과 이를 고르는 엔진이 코코의 본체예요. 앱, OS, SDK는 이 사전을 어디에 꽂느냐의 차이예요.</p></div>
+  </div>
+  <h3>어르신 발화는 이렇게 다양해요</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>유형</th><th>이렇게 말해요</th><th>코코가 연결하는 기능</th></tr></thead>
+    <tbody>
+      <tr><td>목적만 말함</td><td>"손주 얼굴 보고 싶어"</td><td>영상통화</td></tr>
+      <tr><td>증상만 말함</td><td>"글씨가 너무 작아", "전화 소리가 안 나"</td><td>설정 · 글자 크기 / 소리</td></tr>
+      <tr><td>이야기형</td><td>"애들이 뉴진스 얘기하던데…"</td><td>유튜브 · 검색해서 보기</td></tr>
+      <tr><td>지시어·모호</td><td>"그거 있잖아, 사진 보내는 거"</td><td>카카오톡 · 사진 보내기</td></tr>
+      <tr><td>복합</td><td>"어제 찍은 사진 딸한테"</td><td>갤러리 + 카카오톡 연결</td></tr>
+      <tr><td>범위 밖</td><td>"통장에 돈 얼마 있어"</td><td>"아직은 못 도와드려요" → SDK 확장으로 연결</td></tr>
+    </tbody>
+  </table></div>
+  <div class="grid2">
+    <div class="box"><h3>확신이 낮을 때</h3><p class="muted">열린 질문 대신 예/아니오 질문 하나만 해요. 예: "손주랑 얼굴 보면서 통화하실래요?"</p></div>
+    <div class="box"><h3>호칭 매핑</h3><p class="muted">"큰애", "손녀"가 연락처에는 실명으로 저장돼 있어요. "큰애 = 김OO" 같은 작은 프로필을 AI 입력에 같이 넣어요.</p></div>
+  </div>
+</section>
+
+<section id="catalog">
+  <div class="sec-head">
+    <span class="eyebrow">기능 카탈로그 초안</span>
+    <h2>8개 앱, 22개 기능</h2>
+    <p>매칭은 넓게, 스텝은 좁게. AI 매칭은 22개 전부 되게 하고, 단계별 안내는 ★ 표시한 데모용 기능만 끝까지 구현해요. 나머지는 첫 단계(앱 아이콘)만 가리켜도 충분해요.</p>
+  </div>
+  <div class="grid4">
+    <div class="app-card"><h3>유튜브</h3>
+      <div class="cap star"><span class="say">"애들이 뉴진스 얘기하던데"</span><code>YT_SEARCH · 검색어</code></div>
+      <div class="cap"><span class="say">"화면이 너무 작아"</span><code>YT_FULLSCREEN</code></div></div>
+    <div class="app-card"><h3>카카오톡</h3>
+      <div class="cap"><span class="say">"딸한테 밥 먹었냐고 보내줘"</span><code>KT_SEND_TEXT · 대상, 내용</code></div>
+      <div class="cap star"><span class="say">"어제 찍은 사진 아들한테"</span><code>KT_SEND_PHOTO · 대상, 사진</code></div>
+      <div class="cap"><span class="say">"손주 얼굴 보면서 얘기하고 싶어"</span><code>KT_FACETALK · 대상</code></div>
+      <div class="cap"><span class="say">"누가 연락했나?"</span><code>KT_UNREAD</code></div></div>
+    <div class="app-card"><h3>전화</h3>
+      <div class="cap"><span class="say">"큰애한테 전화 좀"</span><code>CALL_VOICE · 대상</code></div>
+      <div class="cap star"><span class="say">"지은이 얼굴 보고 싶다"</span><code>CALL_VIDEO · 대상</code></div>
+      <div class="cap"><span class="say">"아까 누가 전화했었지"</span><code>CALL_MISSED</code></div></div>
+    <div class="app-card"><h3>문자</h3>
+      <div class="cap"><span class="say">"번호가 왔다는데 어디 있어"</span><code>SMS_READ_CODE</code></div>
+      <div class="cap"><span class="say">"문자로 보내줘"</span><code>SMS_SEND · 대상, 내용</code></div></div>
+    <div class="app-card"><h3>카메라</h3>
+      <div class="cap"><span class="say">"사진 찍어줘"</span><code>CAM_PHOTO</code></div>
+      <div class="cap"><span class="say">"내 얼굴 찍을래"</span><code>CAM_SELFIE</code></div>
+      <div class="cap"><span class="say">"약봉투 글씨가 안 보여"</span><code>CAM_MAGNIFIER</code></div></div>
+    <div class="app-card"><h3>갤러리</h3>
+      <div class="cap"><span class="say">"어제 찍은 사진 어디 갔어"</span><code>GAL_RECENT · 날짜</code></div>
+      <div class="cap"><span class="say">"사진을 크게 보고 싶어"</span><code>GAL_ZOOM</code></div></div>
+    <div class="app-card"><h3>카카오맵</h3>
+      <div class="cap"><span class="say">"서울대병원 어떻게 가"</span><code>MAP_ROUTE · 목적지</code></div>
+      <div class="cap"><span class="say">"근처에 약국 있나"</span><code>MAP_NEARBY · 장소 종류</code></div></div>
+    <div class="app-card"><h3>설정</h3>
+      <div class="cap star"><span class="say">"글씨가 너무 작아"</span><code>SET_FONT</code></div>
+      <div class="cap"><span class="say">"전화 소리가 안 나"</span><code>SET_VOLUME</code></div>
+      <div class="cap"><span class="say">"화면이 어두워"</span><code>SET_BRIGHTNESS</code></div>
+      <div class="cap"><span class="say">"인터넷이 안 돼"</span><code>SET_WIFI</code></div></div>
+  </div>
+  <p class="muted">여기에 <code>OUT_OF_SCOPE</code>(범위 밖)를 하나 더 두어 22개예요.</p>
+</section>
+
+<section id="gesture">
+  <div class="sec-head">
+    <span class="eyebrow">HCI · 인간공학</span>
+    <h2>파란 점의 언어: 점 하나는 손가락 하나</h2>
+    <p>클릭은 점이 버튼 위에 뜨는 것으로 충분해요. 나머지 동작은 횟수는 리듬으로, 시간은 차오르는 링으로, 방향과 힘은 붓펜 획의 굵기로 표현해요.</p>
+  </div>
+  <div class="grid4" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+    <div class="g-tile g-tap"><div class="g-stage"><span class="gd"></span></div><b>탭</b><span>점이 한 번 톡 눌리듯 맥동해요.</span></div>
+    <div class="g-tile g-dbl"><div class="g-stage"><span class="gd"></span></div><b>더블탭</b><span>짧은 맥동 두 번. 리듬 자체가 지시예요.</span></div>
+    <div class="g-tile g-long"><div class="g-stage"><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="t" cx="24" cy="24" r="20"/><circle class="r" cx="24" cy="24" r="20"/></svg><span class="gd" style="width:12px;height:12px;margin:-6px 0 0 -6px"></span></div><b>길게 누르기</b><span>링이 다 차면 손을 떼면 돼요.</span></div>
+    <div class="g-tile g-scroll"><div class="g-stage"><svg viewBox="0 0 40 100" aria-hidden="true"><defs><mask id="bm"><rect class="mask-r" x="0" y="0" width="40" height="100" fill="#fff"/></mask></defs><path class="brush" mask="url(#bm)" d="M20 2 C28 2 30 10 29 22 L22 96 C21.5 99 18.5 99 18 96 L11 22 C10 10 12 2 20 2 Z"/></svg></div><b>스크롤</b><span>굵게 눌러 시작해 얇게 빠지는 붓펜 획. 사용자가 스크롤하면 멈춰요.</span></div>
+    <div class="g-tile g-pinch"><div class="g-stage"><span class="gd a"></span><span class="gd b"></span></div><b>확대</b><span>점 두 개가 벌어져요. 두 손가락이라는 뜻이에요.</span></div>
+  </div>
+  <p class="muted">그 밖에 동시 누르기(전원+볼륨)는 화면 가장자리 물리 버튼 옆에 점 두 개로, 뒤로가기 제스처는 화면 끝에서 안쪽으로 짧은 붓 획으로 보여 줘요. 완료되면 칭찬 멘트 대신 짧은 진동과 작은 효과로 끝내요.</p>
+</section>
+
+<section id="tech">
+  <div class="sec-head">
+    <span class="eyebrow">기술 구조</span>
+    <h2>안드로이드 스튜디오 → APK, AI는 API 호출</h2>
+    <p>AI는 안드로이드 스튜디오 "안에서" 돌지 않아요. APK가 OpenAI API를 HTTPS로 부르는 구조라 실행 환경 문제는 없어요.</p>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>기능</th><th>구현 방법</th><th>우선순위</th></tr></thead>
+    <tbody>
+      <tr><td>파란 점 오버레이</td><td><code>TYPE_ACCESSIBILITY_OVERLAY</code> + <code>FLAG_NOT_TOUCHABLE</code>. 터치를 막지 않아요.</td><td><span class="pill p0">P0</span></td></tr>
+      <tr><td>화면 이해</td><td>AccessibilityService로 버튼의 텍스트·설명·viewId·좌표를 읽어요. 스크린샷 비전보다 정확하고 싸요.</td><td><span class="pill p0">P0</span></td></tr>
+      <tr><td>단계 안내</td><td>기능 ID별 스텝 스크립트. 화면 변화·클릭 이벤트로 다음 단계로 넘어가요.</td><td><span class="pill p0">P0</span></td></tr>
+      <tr><td>말 → 기능 매칭</td><td>gpt-4o-mini, JSON 출력, temperature 0, 유형별 few-shot.</td><td><span class="pill p1">P1</span></td></tr>
+      <tr><td>음성 인식</td><td>Android <code>SpeechRecognizer</code>(한국어). 인식률이 낮으면 OpenAI 음성 인식으로 교체.</td><td><span class="pill p1">P1</span></td></tr>
+      <tr><td>목표 유지</td><td>목표 상태를 서비스에 저장. 다른 앱으로 가면 점이 구석에서 대기, 돌아오면 재개.</td><td><span class="pill p2">P2</span></td></tr>
+      <tr><td>붓펜 스크롤·제스처</td><td>Custom View + Canvas/Path 애니메이션. 속도·굵기는 파일 상단 상수로.</td><td><span class="pill p2">P2</span></td></tr>
+      <tr><td>"코코야~" 웨이크워드</td><td>Picovoice Porcupine(한국어 커스텀 키워드, 무료 조건 확인 필요) + 마이크 포그라운드 서비스.</td><td><span class="pill p3">P3</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="grid2">
+    <div class="box"><h3>gpt-4o-mini로 충분한가</h3><p class="muted">기능 목록 중 하나를 고르는 분류라 충분해요. 실제 발화로 정확도를 재 보고 부족할 때만 상위 모델을 사요. 무대용 "데모 모드" 스위치를 꼭 두세요.</p></div>
+    <div class="box"><h3>개인정보 질문 대비</h3><p class="muted">스크린샷이 아니라 버튼 텍스트만 보내고, 비밀번호 칸(<code>isPassword</code>)은 제외해요.</p></div>
+    <div class="box"><h3>버튼 정보 모으기</h3><p class="muted"><code>adb shell uiautomator dump</code>로 각 화면을 덤프해 텍스트·설명·viewId를 그대로 스크립트에 옮겨요. 데모 폰 기종 하나에 맞춰 하드코딩해요.</p></div>
+    <div class="box"><h3>주의할 점</h3><p class="muted">카카오톡은 스마트폰 한 대에서만 로그인이 유지되는 걸로 알려져 있어서, 에뮬레이터 로그인 시 실폰이 로그아웃될 수 있어요(확인 필요). 딥링크 바로가기는 비상용으로만 써요.</p></div>
+  </div>
+</section>
+
+<section id="platform" class="key">
+  <div class="sec-head">
+    <span class="eyebrow">확장성</span>
+    <h2>데모는 앱이지만, 제품은 엔진이에요</h2>
+  </div>
+  <div class="platform">
+    <div class="engine"><span class="eyebrow" style="color:#fff;opacity:.8">COCO Engine</span><h3>말 → 기능 번역 + 최소 개입 안내</h3><p>① 이해 ② 기능 카탈로그 ③ 파란 점. 같은 엔진에 카탈로그만 바꿔 끼워요.</p></div>
+    <div class="arrow" aria-hidden="true">→</div>
+    <div class="forms">
+      <div class="form"><b>APP · 지금</b><span>누구나 설치하는 앱. 해커톤 데모 형태예요.</span></div>
+      <div class="form"><b>OS 내장</b><span>폰 제조사에 판매. 시스템 기능 전체가 카탈로그가 되고 접근성 권한 허들이 사라져요.</span></div>
+      <div class="form"><b>SDK</b><span>금융·보험사에 판매. 보안 때문에 외부 접근이 막힌 앱 안에서, 파트너가 자기 카탈로그를 넣고 데이터는 앱 밖으로 나가지 않아요.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="video">
+  <div class="sec-head">
+    <span class="eyebrow">데모 영상 · 90초</span>
+    <h2>"Meet COCO"로 시작해 실제 폰 화면 중심으로</h2>
+  </div>
+  <div>
+    <div class="tl" role="img" aria-label="90초 영상 타임라인">
+      <div style="flex:8">훅</div><div style="flex:6">타이틀</div><div style="flex:8">호출</div><div style="flex:10" class="hi">이해</div>
+      <div style="flex:18">안내</div><div style="flex:10" class="hi">스스로</div><div style="flex:10" class="hi">몽타주</div><div style="flex:8">제스처</div><div style="flex:8">확장</div><div style="flex:4">끝</div>
+    </div>
+    <div class="tl-axis"><span>0s</span><span>30s</span><span>60s</span><span>90s</span></div>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>시간</th><th>장면</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">0–8s</td><td>흰 화면에 "손주들이 뉴진스 얘기를 하는데… 뉴진스가 뭘까?"</td></tr>
+      <tr><td class="mono">8–14s</td><td>작은 파란 점이 나타나 <b>Meet COCO.</b> / You tap. COCO points the way.</td></tr>
+      <tr><td class="mono">14–22s</td><td>홈 화면 녹화본. "코코야~" 하면 점 주변에 듣는 중 물결</td></tr>
+      <tr><td class="mono">22–32s</td><td><b>AI 판단 과정 시각화:</b> "뉴진스가 뭐야?" → K-pop 그룹 → 영상이 쉬움 → 유튜브 검색 카드</td></tr>
+      <tr><td class="mono">32–50s</td><td>점이 유튜브 → 검색 → 결과 → 영상 순서로 안내. 붓 스크롤 한 번. "탭한 항목 표시"로 손가락이 점을 따라가는 모습</td></tr>
+      <tr><td class="mono">50–60s</td><td><b>스스로 익히기:</b> 같은 영상통화를 세 번. 1일째는 모든 단계에 점, 3일째는 헷갈리는 단계에만, 7일째는 점 없이 혼자 해냄. "대신 해 주지 않아요. 혼자 할 수 있을 때까지 곁에 있어요." / "COCO steps back as you learn."</td></tr>
+      <tr><td class="mono">60–70s</td><td><b>연속 매칭 몽타주:</b> 서로 다른 말 5개 → 기능 카드 5개. 핵심 주장을 가장 직접적으로 보여 줘요</td></tr>
+      <tr><td class="mono">70–78s</td><td>파란 점의 언어 5종</td></tr>
+      <tr><td class="mono">78–86s</td><td>엔진 하나 → App / OS / SDK</td></tr>
+      <tr><td class="mono">86–90s</td><td>엔딩: 파란 점 + COCO + c0mpiled-17 Seoul</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="clean">
+    <li>녹화는 Mac에서 <code>scrcpy --record</code>로. 개발자 옵션의 "탭한 항목 표시"를 켜요.</li>
+    <li>스스로 익히기 장면은 같은 영상통화를 안내 단계(전체 / 어려운 단계만 / 없음)만 바꿔 세 번 녹화해요.</li>
+    <li>유튜브 광고가 흐름을 끊지 않게 영상을 미리 골라 둬요.</li>
+    <li>"어르신 발화 N개 중 X% 매칭" 숫자는 실제로 측정했을 때만 넣어요.</li>
+  </ul>
+</section>
+
+<section id="plan" class="key">
+  <div class="sec-head">
+    <span class="eyebrow">5시간 · 2인</span>
+    <h2>남은 5시간, 둘이서 해낼 일</h2>
+    <p>역할은 A = 개발(안드로이드), B = 기획·AI·영상으로 가정했어요. 둘 다 클로드 코드를 써서 코드를 받아요. 시간은 시작 기준 경과 시간이에요.</p>
+  </div>
+  <div class="plan">
+    <div class="t hd">시간</div><div class="a hd">A · 개발</div><div class="b hd">B · 기획·AI·영상</div>
+
+    <div class="t">0:00–0:20</div><div class="both">함께: 데모 시나리오 ★3개 확정(유튜브 뉴진스 · 손주 영상통화 · 글씨 크게), 데모 폰 1대 결정, 개발자 옵션·USB 디버깅, API 키 공유. 가족 단톡방에 "폰으로 하고 싶은데 못 했던 일, 말로 해 주세요" 요청 보내기.</div>
+
+    <div class="t">0:20–1:30</div>
+    <div class="a">AccessibilityService + 파란 점 오버레이 띄우기. 텍스트·설명·viewId로 버튼을 찾는 함수. <b>점이 홈 화면 유튜브 아이콘 위에 뜨면 성공.</b></div>
+    <div class="b">기능 카탈로그 22개를 JSON으로 정리. 발화 30~50개 수집(가족 답장 + 팀 작성). 4o-mini 프롬프트(유형별 few-shot, JSON 출력) 작성.</div>
+
+    <div class="t">1:30–2:30</div>
+    <div class="a">스텝 엔진: 기능 ID → 단계 목록, 화면 변화·클릭 이벤트로 다음 단계 진행. ★유튜브 시나리오 끝까지 연결.</div>
+    <div class="b">발화로 정확도 측정 → 숫자 확보. <code>uiautomator dump</code>로 ★시나리오 화면들의 버튼 정보 수집해 A에게 전달. 클로드 코드로 Kotlin <code>IntentClient</code>(API 호출) 생성.</div>
+
+    <div class="t">2:30–3:15</div>
+    <div class="a">음성 인식 + IntentClient 연결 → 말부터 점까지 한 번에. 데모 모드 스위치와 안내 단계 설정(전체 / 어려운 단계만 / 없음).</div>
+    <div class="b">Remotion 1단계 프롬프트로 스토리보드 승인 → 녹화본 없이 그래픽 장면(훅·타이틀·이해·몽타주·제스처·확장·엔딩) 먼저 제작.</div>
+
+    <div class="t">3:15–3:45</div>
+    <div class="a">★영상통화 · 글씨 크게 시나리오 추가. 시간 남으면 붓 스크롤.</div>
+    <div class="b">발표 덱(문제 → 페르소나 → 해결 → 데모 → 구조 → 확장성) 작성.</div>
+
+    <div class="t">3:45–4:15</div><div class="both">함께: 기능 동결. 실폰 화면 녹화(scrcpy). 시나리오별 2~3테이크. 영상통화는 안내 단계를 바꿔 1일째·3일째·7일째 세 번 녹화. "코코야~"는 실제 목소리로.</div>
+
+    <div class="t">4:15–4:45</div>
+    <div class="a">APK 빌드·백업, 버그 수정, 시연용 폰 세팅.</div>
+    <div class="b">녹화본을 Remotion <code>public/</code>에 넣고 점 위치 숫자 맞추기 → 렌더.</div>
+
+    <div class="t">4:45–5:00</div><div class="both">함께: 리허설 1회, 제출. 라이브 시연이 막히면 영상으로 바로 전환.</div>
+  </div>
+
+  <h3>체크포인트와 컷 규칙</h3>
+  <div>
+    <div class="gate"><span class="when">1:30</span><span>점이 실제 앱 위에 안 뜨면 → 오버레이 디버깅에 둘 다 붙어요. 2:00까지도 안 되면 웹 목업(브라우저 속 폰 프레임) 백업으로 전환해요.</span></div>
+    <div class="gate"><span class="when">2:30</span><span>★유튜브 시나리오가 처음부터 끝까지 안 되면 → 다른 시나리오는 첫 단계만 가리키게 하고 이 하나에 집중해요.</span></div>
+    <div class="gate"><span class="when">3:15</span><span>음성 연결이 불안정하면 → 코코 버튼 + 미리 정한 문장 입력으로 시연해요. 웨이크워드는 로드맵으로 소개해요.</span></div>
+    <div class="gate"><span class="when">3:45</span><span>무슨 일이 있어도 촬영을 시작해요. 이후에는 새 기능을 넣지 않아요.</span></div>
+  </div>
+</section>
+
+<section id="next">
+  <div class="sec-head">
+    <span class="eyebrow">해커톤 이후</span>
+    <h2>넥스트 스텝</h2>
+  </div>
+  <div class="grid2">
+    <div class="box"><h3>어르신과 검증</h3><p class="muted">실제 어르신 대상 사용성 테스트로 점 크기, 애니메이션 속도, 말풍선 길이를 조정해요. 발화 데이터셋을 키우고 매칭 정확도를 계속 추적해요.</p></div>
+    <div class="box"><h3>점점 덜 끼어들기</h3><p class="muted">자주 하는 일(영상통화 등)은 숙련도에 따라 점이 늦게, 흐리게 나타나고, 드문 일(보험 청구 등)은 매번 다시 안내해요.</p></div>
+    <div class="box"><h3>온디바이스로</h3><p class="muted">웨이크워드와 의도 분류를 기기 안에서 돌리는 방안을 검토해요. 개인정보와 응답 속도 모두에 유리해요.</p></div>
+    <div class="box"><h3>파트너 파일럿</h3><p class="muted">제조사 OS 내장, 금융·보험 SDK 파일럿을 제안해요. 상품 가입·해지 권유는 하지 않고 설명과 절차 안내로 역할을 한정해요. 보이스피싱 경고 같은 보호 기능도 확장 후보예요.</p></div>
+  </div>
+</section>
+
+<section id="prompt">
+  <div class="sec-head">
+    <span class="eyebrow">데모 영상 제작</span>
+    <h2>클로드 코드에 처음 넣을 프롬프트</h2>
+    <p>Remotion으로 90초 영상을 만들어요. 1단계는 스토리보드와 디자인만 받고, 승인한 뒤에 2단계로 코드를 받아요.</p>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-bar"><b>1단계 · 스토리보드 먼저</b><button class="copy" id="copy1" type="button" data-target="p1">프롬프트 복사</button></div>
+    <pre id="p1">나는 Remotion을 처음 사용하는 사람이다.
+React 코드는 직접 작성하지 않고 네가 작성해 줘.
+
+지금 해커톤(c0mpiled-17 Seoul, 주제: AI for the Aging Population) 중이라 시간이 매우 짧다.
+약 1시간 안에 완성할 수 있는 수준으로, 제품 소개용 90초 데모 영상을 Remotion으로 만들려고 한다.
+
+----------------------------------------------------------------
+제품 정보
+----------------------------------------------------------------
+- 이름: COCO (한국어 "코코")
+- 한 줄 설명: 스마트폰을 쓰는 어르신을 위한 작은 파란 점 조수
+- 핵심 메시지: "You tap. COCO points the way." (누르는 건 어르신, 가리키는 건 코코)
+- 작동 방식:
+  1) 어르신이 "코코야~" 하고 부른다
+  2) 두서없는 말을 듣는다 (예: "애들이 뉴진스 얘기하던데 그게 뭐야?")
+  3) AI가 그 말을 폰 기본 앱의 기능 중 하나로 연결한다
+     (뉴진스 → K-pop 그룹 → 글보다 영상이 이해하기 쉬움 → 유튜브 검색)
+  4) 아주 작은 파란 점이 다음에 누를 곳을 가리킨다. 대신 눌러 주지 않는다.
+     어르신이 직접 누르며 폰을 익힌다 (자기 주체감 보존, 최소 개입)
+  5) 중간에 전화가 와도 목표를 잊지 않고, 끝나면 다시 다음 단계를 가리킨다
+  6) 쓸수록 점이 줄어든다. 익숙해진 단계는 점이 늦게, 흐리게 나타나고 결국 혼자 해낸다
+- 진짜 핵심(꼭 강조): 어르신의 두서없는 말을 폰의 기능으로 번역하는 엔진
+- 또 하나의 핵심(꼭 강조): 대신 해 주는 대행형이 아니라, 어르신이 주체감을 갖고 직접 익혀서
+  나중에는 혼자서도 할 수 있게 돕는 교육형 조수
+- 확장성: 지금은 앱 → 폰 제조사용 내장 OS 기능 → 금융·보험사용 SDK
+- 지원 앱: 카카오톡, 카카오맵, 유튜브, 갤러리, 카메라, 전화(음성·영상), 문자, 설정
+
+----------------------------------------------------------------
+내가 생각한 장면 초안 (이걸 다듬어서 스토리보드로 만들어 줘)
+----------------------------------------------------------------
+S1  0–8초   훅: 흰 화면에 "손주들이 뉴진스 얘기를 하는데… 뉴진스가 뭘까?" 천천히 등장
+S2  8–14초  타이틀: 작은 파란 점이 나타나 "Meet COCO." 로고가 됨
+            서브카피 "You tap. COCO points the way."
+S3  14–22초 호출: 폰 화면 녹화 영상(세로) + "코코야~" 자막, 파란 점 주변에 듣는 중 물결
+S4  22–32초 이해: 말 → 기능 번역 시각화
+            말풍선 "뉴진스가 뭐야?" → 판단 칩 3개(K-pop 그룹 / 영상이 쉬움 / YouTube)
+            → 기능 카드 [YouTube · 검색해서 보기]
+S5  32–50초 안내: 폰 화면 녹화 영상. 파란 점이 유튜브 → 검색 → 결과 → 영상 순서로 안내
+            단계마다 짧은 자막(예: "돋보기를 눌러 보세요")
+S6  50–60초 스스로 익히기: 같은 일(손주에게 영상통화)을 세 번 보여 줌
+            1일째: 모든 단계에 점 → 3일째: 헷갈리는 단계에만 점 → 7일째: 점 없이 혼자 해냄
+            폰 세 대를 나란히 두거나 빠르게 이어 붙여서, 점이 점점 줄어드는 게 한눈에 보이게
+            마지막에 어르신 손가락이 혼자 통화 버튼을 누르는 순간에서 잠깐 멈춤
+            카피 "대신 해 주지 않아요. 혼자 할 수 있을 때까지 곁에 있어요."
+                 "COCO steps back as you learn."
+            녹화본: public/rec-day1.mp4, rec-day3.mp4, rec-day7.mp4 (각 8초 안팎)
+S7  60–70초 연속 매칭 몽타주: 서로 다른 어르신 말 5개가 빠르게 지나가며 각각 기능 카드로 바뀜
+            "손주 얼굴 보고 싶어" → 영상통화
+            "글씨가 너무 작아" → 설정 · 글자 크기
+            "어제 사진 딸한테 보내야 되는데" → 카카오톡 · 사진 보내기
+            "근처에 약국 있나" → 카카오맵 · 주변 찾기
+            "번호가 왔다는데 어디 있어" → 문자 · 인증번호 확인
+S8  70–78초 파란 점의 언어: 코드로 그린 제스처 5종
+            탭(한 번 맥동) / 더블탭(두 번 톡톡) / 길게 누르기(링이 차오름)
+            / 스크롤(굵게 시작해 얇게 빠지는 붓펜 획) / 확대(점 두 개가 벌어짐)
+S9  78–86초 확장성: 가운데 "말 → 기능 엔진" 하나에서 App / OS / SDK 세 갈래로 뻗음
+S10 86–90초 엔딩: 파란 점 + COCO + "c0mpiled-17 Seoul"
+
+----------------------------------------------------------------
+먼저 실제 코드를 작성하지 말고 다음을 진행해 줘
+----------------------------------------------------------------
+1. 위 초안을 바탕으로 90초 영상의 전체 스토리보드 작성 (흐름이 어색하면 고쳐서 제안)
+2. 각 장면의 시작 및 종료 시간과 프레임 번호 (1920x1080, 30fps, 총 2700프레임)
+3. 장면별 화면 구성과 애니메이션 설계
+4. 전체 디자인 시스템 정의
+   - 색상 팔레트: 흰 배경, 거의 검정 텍스트, 포인트 컬러는 "COCO 블루" 하나만
+     (파란 점 색이 곧 브랜드 컬러)
+   - 폰트: 한글이 깨지지 않는 폰트 (Pretendard 또는 Noto Sans KR 중 추천하고 불러오는 방법 설명)
+   - 타이포그래피 스케일
+   - 화면 전환 방식
+   - 애니메이션 속도와 움직임 (spring 설정값 포함)
+5. 필요한 이미지와 영상 소스 목록
+   - 폰 화면 녹화본은 내가 scrcpy로 직접 찍어서 public 폴더에 넣을 예정 (세로 영상, mp4)
+     파일명과 길이(초)를 미리 정해 줘. 예: public/rec-youtube.mp4
+   - 녹화본이 아직 없어도 회색 자리표시 화면으로 미리보기가 되게 설계해 줘
+   - 폰 테두리는 특정 제조사 기기 이미지 대신 코드로 그린 단순한 프레임 사용
+
+디자인 방향:
+- Apple 제품 광고와 같은 미니멀한 디자인
+- 과도한 그라데이션이나 장식 금지
+- 정교하고 자연스러운 모션
+- 여백과 타이포그래피를 적극 활용
+- 전문적인 광고 영상 수준의 완성도
+- 파란 점은 작고 조용하게. 화면을 가리지 않는다는 제품 철학이 영상에서도 느껴지게
+- 자막은 한국어 위주, 핵심 카피만 영어
+
+스토리보드와 디자인을 먼저 보여주고
+내가 승인하기 전에는 코드를 작성하지 마.</pre>
+  </div>
+  <details><summary>2단계 · 스토리보드 승인 후 구현</summary>
+    <div class="prompt-bar" style="margin-bottom:8px"><span class="muted">승인한 다음에 넣어요.</span><button class="copy ghost" id="copy2" type="button" data-target="p2">복사</button></div>
+    <pre id="p2">승인한 스토리보드를 기반으로 Remotion 프로젝트를 구현해 줘.
+프로젝트 생성부터 설치까지 네가 터미널에서 직접 진행해 줘.
+
+요구사항:
+1. 각 장면을 독립적인 React 컴포넌트로 구성
+2. 전체 영상은 하나의 Composition(ID: CocoDemo)으로 연결
+3. 모든 애니메이션은 Remotion의 useCurrentFrame, interpolate, spring 등을 사용
+4. 장면 전환은 부드럽고 자연스럽게 구현
+5. 텍스트와 UI 요소는 실제 영상에서 깨지지 않도록 구현 (한글 폰트 로딩 확인)
+6. 각 장면의 시작과 종료 프레임을 한 파일(timeline 상수)에서 명확히 관리
+7. 디자인 시스템(색, 폰트, 크기, spring 값)을 한 파일로 분리해 재사용
+8. 폰 녹화 영상은 &lt;OffthreadVideo&gt;로 넣고, 파일이 없을 때는 자리표시 화면이 보이도록
+   상단 상수(USE_RECORDINGS = false)로 전환할 수 있게 해 줘
+9. 파란 점 위치(x, y)와 등장 프레임을 장면별 상수로 빼서, 내가 녹화본에 맞춰 숫자만 바꾸면 되게 해 줘
+
+CSS transition이나 CSS keyframes에 의존하지 말고
+Remotion의 프레임 기반 애니메이션을 사용해 줘.
+
+구현이 끝나면 Remotion Studio(npx remotion studio)에서 미리보기 할 수 있도록 해 주고,
+내가 수정해야 할 숫자들이 어느 파일 몇째 줄에 있는지 정리해 줘.</pre></details>
+  <details><summary>3단계 · 수정 요청 예시와 최종 렌더</summary>
+    <pre id="p3">현재 영상에서 다음 부분을 수정해 줘.
+1. (예) 첫 장면의 텍스트 등장 속도가 너무 빠르다.
+2. (예) S5에서 파란 점 위치가 녹화본의 버튼과 안 맞는다. 위치 상수를 녹화본 기준으로 맞춰 줘.
+3. (예) S7 몽타주의 기능 카드가 평범하다.
+4. (예) 화면 전환이 기계적으로 느껴진다.
+전체적인 디자인 시스템은 유지하면서 수정해 줘.
+수정 후 각 장면의 시작과 끝 부분을 확인해 줘.
+
+[최종 렌더]
+npx remotion compositions
+npx remotion render CocoDemo out/coco-demo.mp4
+
+[메모]
+- 5시간 해커톤에서는 Runway·Kling 같은 생성 영상은 건너뛰고,
+  실제 폰 화면 녹화 + Remotion 합성만으로 충분하다.
+- "코코야~" 음성은 팀원이 직접 녹음한 실제 목소리를 쓴다.
+- 내레이션이나 배경음악을 넣는다면 상업적 이용 조건을 따로 확인한다.
+- 정확도 숫자("어르신 발화 N개 중 X% 매칭")는 실제로 측정한 경우에만 영상에 넣는다.</pre></details>
+</section>
+
+<footer>COCO · c0mpiled-17 Seoul · AI for the Aging Population · 2026.11</footer>
+</div>
+
+<script>
+document.querySelectorAll('button.copy').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var pre=document.getElementById(btn.dataset.target);
+    var label=btn.textContent;
+    function done(msg){btn.textContent=msg;setTimeout(function(){btn.textContent=label},1600)}
+    function fallback(){var r=document.createRange();r.selectNodeContents(pre);var s=window.getSelection();s.removeAllRanges();s.addRange(r);done('선택됨, 복사하세요')}
+    try{navigator.clipboard.writeText(pre.innerText).then(function(){done('복사됨')},fallback)}catch(e){fallback()}
+  });
+});
+</script>
+
+</body>
+</html>
